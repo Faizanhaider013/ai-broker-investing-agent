@@ -12,7 +12,7 @@
  * 6. Pass source markets + search results to the arbitrage analysis agent
  * 7. Return the analysis
  *
- * Refactored from the PredictOS `arbitrage-finder` Supabase edge function into
+ * Refactored from the upstream `arbitrage-finder` Supabase edge function into
  * a plain async function.
  */
 

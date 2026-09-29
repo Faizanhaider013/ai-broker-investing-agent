@@ -5,7 +5,7 @@
  * sources) into a single consolidated assessment. Acts as a "judge" that
  * weighs different agent opinions.
  *
- * Refactored from the PredictOS `bookmaker-agent` Supabase edge function into
+ * Refactored from the upstream `bookmaker-agent` Supabase edge function into
  * a plain async function.
  */
 

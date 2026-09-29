@@ -5,7 +5,7 @@
  * and Polymarket (via the Gamma API). Jupiter prediction-market URLs are
  * treated as Kalshi since they use Kalshi event tickers.
  *
- * Refactored from the PredictOS `get-events` Supabase edge function into a
+ * Refactored from the upstream `get-events` Supabase edge function into a
  * plain async function.
  */
 

@@ -2,7 +2,7 @@
  * Polyfactual Deep Research API client.
  *
  * A client for the Polyfactual Deep Research API that provides research
- * capabilities with citations. Ported from the PredictOS `polyfactual` shared
+ * capabilities with citations. Ported from the upstream `polyfactual` shared
  * client.
  *
  * API Documentation:

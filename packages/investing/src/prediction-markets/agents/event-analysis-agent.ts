@@ -7,7 +7,7 @@
  * - OpenAI - via `openaiApiKey` / `OPENAI_API_KEY`
  * - BlockRun - via `blockrunWalletKey` / `BLOCKRUN_WALLET_KEY` (x402 micropayments)
  *
- * Refactored from the PredictOS `event-analysis-agent` Supabase edge function
+ * Refactored from the upstream `event-analysis-agent` Supabase edge function
  * into a plain async function: no HTTP handler, no CORS, typed input/output.
  */
 

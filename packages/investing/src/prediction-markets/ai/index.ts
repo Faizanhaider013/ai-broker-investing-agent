@@ -1,5 +1,5 @@
 /**
- * AI provider clients and prompt builders for the PredictOS pipeline.
+ * AI provider clients and prompt builders for the prediction-market pipeline.
  */
 
 export * from "./types.js";

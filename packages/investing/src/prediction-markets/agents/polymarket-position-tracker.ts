@@ -4,7 +4,7 @@
  * Fetches and calculates position data for Polymarket 15-minute up/down
  * markets. Shows filled orders, average costs, and profit-lock status.
  *
- * Refactored from the PredictOS `polymarket-position-tracker` Supabase edge
+ * Refactored from the upstream `polymarket-position-tracker` Supabase edge
  * function into a plain async function.
  */
 

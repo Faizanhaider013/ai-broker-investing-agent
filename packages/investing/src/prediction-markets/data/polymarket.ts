@@ -1,7 +1,7 @@
 /**
  * Polymarket (and Kalshi) market data client via the Dome API.
  *
- * Ported from the PredictOS `dome` shared client. The API key is read from
+ * Ported from the upstream `dome` shared client. The API key is read from
  * the `apiKey` option, falling back to `process.env.DOME_API_KEY`.
  *
  * @see https://docs.domeapi.io/

@@ -2,7 +2,7 @@
  * Multi-agent analysis and execution pipeline.
  *
  * Includes the analysis agents (event-analysis, bookmaker, mapper) plus the
- * execution/research agents ported from the fuller PredictOS surface
+ * execution/research agents ported from the fuller upstream surface
  * (Polyfactual deep research, x402 seller, and the Polymarket trading agents).
  */
 

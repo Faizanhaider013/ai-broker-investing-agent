@@ -4,7 +4,7 @@
  * Provides deep research capabilities using the Polyfactual API. Returns
  * comprehensive answers with citations for any research query.
  *
- * Refactored from the PredictOS `polyfactual-research` Supabase edge function
+ * Refactored from the upstream `polyfactual-research` Supabase edge function
  * into a plain async function.
  */
 

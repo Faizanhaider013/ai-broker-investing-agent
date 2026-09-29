@@ -1,7 +1,7 @@
 /**
  * Kalshi market data client (via the DFlow API).
  *
- * DFlow provides Kalshi market data. Ported from the PredictOS `dflow`
+ * DFlow provides Kalshi market data. Ported from the upstream `dflow`
  * shared client. The API key is read from the `apiKey` option, falling back
  * to `process.env.DFLOW_API_KEY`.
  */
