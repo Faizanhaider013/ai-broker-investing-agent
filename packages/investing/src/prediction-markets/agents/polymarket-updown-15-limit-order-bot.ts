@@ -4,7 +4,7 @@
  * Automated limit order bot for Polymarket 15-minute up/down markets. Places
  * straddle (or ladder) orders on the closest upcoming market.
  *
- * Refactored from the PredictOS
+ * Refactored from the
  * `polymarket-up-down-15-markets-limit-order-bot` Supabase edge function into a
  * plain async function.
  */

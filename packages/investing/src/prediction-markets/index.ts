@@ -1,11 +1,14 @@
 /**
- * predictos - PredictOS "Super Intelligence" core, refactored for Node/TypeScript ESM.
+ * Prediction-market multi-agent analysis, data clients, and cross-platform
+ * arbitrage.
  *
- * Adapted from PredictOS by PredictionXBT (https://github.com/PredictionXBT/PredictOS),
- * MIT licensed. The original Deno/Supabase edge functions have been refactored into
- * plain, typed async library functions.
+ * Originally Deno/Supabase edge functions (MIT licensed, see ./LICENSE),
+ * refactored into plain, typed async library functions.
  *
- * This package provides:
+ * Usage:
+ *   import { runEventAnalysisAgent, findArbitrage, getEvents } from "investing/prediction-markets";
+ *
+ * This module provides:
  * - AI provider clients (OpenAI, Grok/xAI, BlockRun) and prompt builders
  * - Prediction market data clients (Kalshi via DFlow, Polymarket via Dome/Gamma)
  * - The multi-agent analysis pipeline (event analysis, bookmaker, mapper)
@@ -23,7 +26,7 @@ export * from "./ai/index.js";
 // The Kalshi (DFlow) client is the canonical one exported at the top level.
 // The Polymarket (Dome) client also exposes Kalshi helpers under the same
 // names; to avoid ambiguity those two are re-exported here with `Dome`/`dome`
-// prefixes. Import from `predictos/data/polymarket` for their original names.
+// prefixes. Import from `./data/polymarket` for their original names.
 export * from "./data/kalshi.js";
 export {
   domeRequest,

@@ -1,8 +1,8 @@
 /**
- * Shared domain types for the PredictOS core pipeline.
+ * Shared domain types for the prediction-market pipeline.
  *
  * Consolidated from the per-function `types.ts` files of the original
- * PredictOS Supabase edge functions.
+ * original Supabase edge functions.
  */
 
 // ============================================================================

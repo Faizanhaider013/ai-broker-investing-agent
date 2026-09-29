@@ -1,5 +1,5 @@
 /**
- * Polymarket CLOB client (ported from the PredictOS `polymarket` shared client).
+ * Polymarket CLOB client (ported from the upstream `polymarket` shared client).
  *
  * Provides functionality to:
  * - Fetch market data from the Gamma API

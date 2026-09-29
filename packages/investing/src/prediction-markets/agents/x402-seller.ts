@@ -9,7 +9,7 @@
  *
  * Supports both Solana and EVM (Base) networks.
  *
- * Refactored from the PredictOS `x402-seller` Supabase edge function into a
+ * Refactored from the upstream `x402-seller` Supabase edge function into a
  * plain async function.
  */
 

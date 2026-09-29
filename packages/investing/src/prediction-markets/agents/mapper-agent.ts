@@ -6,7 +6,7 @@
  *
  * Currently supports: Polymarket. Kalshi support is not yet implemented.
  *
- * Refactored from the PredictOS `mapper-agent` Supabase edge function into a
+ * Refactored from the upstream `mapper-agent` Supabase edge function into a
  * plain synchronous function. This is pure logic - no AI or network calls.
  */
 

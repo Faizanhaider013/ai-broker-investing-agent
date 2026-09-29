@@ -1,5 +1,5 @@
 /**
- * x402 client (ported from the PredictOS `x402` shared client).
+ * x402 client (ported from the upstream `x402` shared client).
  *
  * Provides functionality to:
  * 1. List sellers from the x402 bazaar

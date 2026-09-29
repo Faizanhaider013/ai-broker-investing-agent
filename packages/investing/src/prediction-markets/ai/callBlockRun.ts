@@ -1,5 +1,5 @@
 /**
- * BlockRun AI Client for PredictOS
+ * BlockRun AI Client for the prediction-market agents
  *
  * Provides access to 20+ LLM providers (OpenAI, Anthropic, xAI, Google, DeepSeek, etc.)
  * via x402 micropayments. No API keys required - wallet-based pay-per-request.
@@ -407,7 +407,7 @@ export async function callBlockRunResponses(
 }
 
 /**
- * Transform OpenAI-compatible response to PredictOS format
+ * Transform OpenAI-compatible response to the internal response format
  */
 function transformToResponseResult(
   response: Record<string, unknown>,
@@ -428,7 +428,7 @@ function transformToResponseResult(
   // Extract text from first choice
   const outputText = choices[0]?.message?.content || "";
 
-  // Build response in PredictOS format (similar to OpenAI/Grok response structure)
+  // Build response in the internal format (similar to OpenAI/Grok response structure)
   return {
     created_at: (response.created as number) || Math.floor(Date.now() / 1000),
     id: (response.id as string) || `blockrun-${Date.now()}`,

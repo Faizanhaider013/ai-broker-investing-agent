@@ -10,7 +10,7 @@
  * 2. Legacy mode: Pass individual fields and let the function figure out order
  *    params.
  *
- * Refactored from the PredictOS `polymarket-put-order` Supabase edge function
+ * Refactored from the upstream `polymarket-put-order` Supabase edge function
  * into a plain async function.
  */
 
