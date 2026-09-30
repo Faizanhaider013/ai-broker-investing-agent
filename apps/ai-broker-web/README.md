@@ -5,7 +5,7 @@ the D1 schema. This is the only workspace in the monorepo that ships.
 
 📑 [Documentation](https://docs.autoinvestment.broker/) ·
 🚀 [Live app](https://autoinvestment.broker) ·
-🔌 [API](https://autoinvestment.broker/api/docs)
+🔌 [API](https://autoinvestment.broker/api)
 
 ## What it does
 
@@ -14,7 +14,7 @@ the D1 schema. This is the only workspace in the monorepo that ships.
 | Agent debate | `/debate`, `/stock/[symbol]` | Several LLM analyst agents argue a position — bull, bear, risk — and return a scored verdict with citations. |
 | Markets | `/markets`, `/stock/[symbol]` | Quotes, historical bars and charts from Alpaca and Finnhub, rendered with lightweight-charts. |
 | Portfolio | `/portfolio`, `/dashboard` | Positions, entry/exit signals from `packages/investing`, and paper or broker execution through Alpaca. |
-| Prediction markets | `/predict` | Cross-venue prices and arbitrage spreads from `packages/predictos` (Polymarket, Kalshi). |
+| Prediction markets | `/predict` | Cross-venue prices and arbitrage spreads from `packages/investing/src/prediction-markets` (Polymarket, Kalshi). |
 | Copy trading | `/leaders` | Leaderboards of tracked traders and their disclosed positions. |
 | Accounts | `/login`, `/legal` | better-auth sign-in (Google, email, SIWE wallet), Stripe subscriptions via the better-auth plugin, Didit KYC at `/api/kyc`. |
 | Admin | `/admin` | User and D1 controls, gated on `ADMIN_EMAILS`. |
@@ -86,7 +86,7 @@ first, or from this directory with `bun run <script>`.
 | `dev` | `vinext dev` on port 3000, with live D1 and email bindings. |
 | `build` | `vinext build` → `dist/client` + `dist/server`. |
 | `preview` | Builds and serves the production Worker locally. |
-| `deploy` | `vinext-cloudflare deploy`. |
+| `deploy` | Applies `migrations/` to the remote D1, then `vinext-cloudflare deploy`. |
 | `test` | `vitest run`. |
 | `type-check` | `tsc --noEmit`. |
 | `cf-typegen` | Regenerates `cloudflare-env.d.ts` from `wrangler.jsonc`. |
@@ -293,9 +293,13 @@ bun run preview   # the production Worker, locally — do this first
 bun run deploy
 ```
 
-`bun run deploy` runs `vinext-cloudflare deploy`, which builds and uploads the
-Worker, its assets, and the cron triggers together. Roll back from the
-dashboard under Workers → the Worker → Deployments.
+`bun run deploy` applies any unapplied migrations to the remote D1 and then
+runs `vinext-cloudflare deploy`, which builds and uploads the Worker, its
+assets, and the cron triggers together. The order matters: the Worker writes
+every column its Drizzle schema declares, so new code against a database still
+on the old schema fails on its first insert. The GitHub Actions deploy does the
+same two steps. Roll back from the dashboard under Workers → the Worker →
+Deployments.
 
 The full guide — Git-connected builds, custom domains, and rollbacks — is in
 [Deployment](https://docs.autoinvestment.broker/docs/deployment).

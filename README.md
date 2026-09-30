@@ -1,13 +1,10 @@
 <p align="center">
-    <img src="https://i.imgur.com/4UC1Ixq.png" />
-</p>
-
-<!-- template-git-repo:badges:start -->
-<p align="center">
+    <img src="https://i.imgur.com/4UC1Ixq.png" /><br/>
+    <a href="https://doi.org/10.5281/zenodo.20836179"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.20836179.svg" alt="DOI"></a>
     <a href="https://deepwiki.com/OpenSourceAGI/ai-broker-investing-agent"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki" /></a>
     <a href="https://autoinvestment.broker"><img height="20px" src="https://img.shields.io/badge/App-blueviolet?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Website" /></a>
-    <a href="https://docs.autoinvestment.broker/"><img src="https://img.shields.io/badge/Docs-blue?logo=ReadTheDocs&logoColor=white" alt="Documentation" /></a>
-    <a href="https://autoinvestment.broker/api/docs"><img src="https://img.shields.io/badge/API-blue?logo=fastapi&logoColor=white" alt="API" /></a>
+    <a href="https://autoinvestment.broker/docs"><img src="https://img.shields.io/badge/Docs-blue?logo=ReadTheDocs&logoColor=white" alt="Documentation" /></a>
+    <a href="https://autoinvestment.broker/api"><img src="https://img.shields.io/badge/API-blue?logo=fastapi&logoColor=white" alt="API" /></a>
     <a href="https://stats.uptimerobot.com/lwSHnzMtDL/803967180"><img src="https://img.shields.io/badge/Uptime--Status-brightgreen?logo=uptimerobot&logoColor=white" alt="Uptime Status" /></a>
     <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/OpenSourceAGI/ai-broker-investing-agent"><img height="24px" src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare Workers" /></a>
     <br />
@@ -15,10 +12,9 @@
     <a href="https://www.npmjs.com/package/investing"><img src="https://img.shields.io/npm/dm/investing.svg" alt="NPM Monthly Downloads" /></a>
     <a href="https://www.npmjs.com/package/investing"><img src="https://img.shields.io/npm/v/investing.svg" alt="npm version" /></a>
     <a href="https://www.npmjs.com/package/investing"><img src="https://img.shields.io/npm/dt/investing.svg" alt="NPM Total Downloads" /></a>
-    <a href="https://www.npmjs.com/package/investing"><img src="https://img.shields.io/npm/types/investing" alt="TypeScript types" /></a>
-    <a href="https://packagephobia.com/result?p=investing"><img src="https://packagephobia.com/badge?p=investing" alt="Install size" /></a>
     <a href="https://codecov.io/gh/OpenSourceAGI/ai-broker-investing-agent"><img src="https://codecov.io/gh/OpenSourceAGI/ai-broker-investing-agent/graph/badge.svg" alt="Coverage" /></a>
     <a href="https://github.com/OpenSourceAGI/ai-broker-investing-agent/actions/workflows/test.yml"><img src="https://github.com/OpenSourceAGI/ai-broker-investing-agent/actions/workflows/test.yml/badge.svg?branch=main" alt="CI status" /></a>
+    <img src="https://img.shields.io/badge/%EB%AA%A8%20lines-28k-yellow" />
     <br />
     <a href="https://github.com/OpenSourceAGI/ai-broker-investing-agent/graphs/contributors"><img src="https://img.shields.io/github/contributors/OpenSourceAGI/ai-broker-investing-agent" alt="Contributors" /></a>
     <a href="https://github.com/OpenSourceAGI/ai-broker-investing-agent/forks"><img src="https://img.shields.io/github/forks/OpenSourceAGI/ai-broker-investing-agent" alt="GitHub Forks" /></a>
@@ -79,7 +75,6 @@ from the repo root, and `turbo` fans it out to the workspaces that define it.
 │   └── ai-broker-web/        # Next.js app (UI, API routes, docs, D1 schema & migrations)
 ├── packages/
 │   ├── investing/            # Trading agents, market data, prediction markets
-│   ├── predictos/            # Prediction-market analysis & cross-platform arbitrage
 │   ├── ai-broker-api-client/ # Generated API client
 │   ├── fin-data-api/         # Financial data API service
 │   └── mcp-server/           # MCP server generated from the OpenAPI spec
@@ -107,7 +102,7 @@ npx turbo run test --filter=investing
 ### Coverage
 
 `npm run test:coverage` runs each workspace's suite with coverage on (Vitest for the app,
-`investing`, `predictos` and the API client; Jest for `fin-data-api`) and merges the
+`investing` and the API client; Jest for `fin-data-api`) and merges the
 per-workspace LCOV reports into `coverage/lcov.info` with repository-root-relative paths.
 
 CI runs the same command on every pull request in
@@ -124,7 +119,6 @@ Each workspace documents itself:
 | :--- | :--- |
 | The app | [`apps/ai-broker-web`](apps/ai-broker-web/README.md) |
 | Trading agents & market data | [`packages/investing`](packages/investing/README.md) |
-| Prediction markets & arbitrage | [`packages/predictos`](packages/predictos/README.md) |
 | Financial data API | [`packages/fin-data-api`](packages/fin-data-api/README.md) |
 | Generated API client | [`packages/ai-broker-api-client`](packages/ai-broker-api-client/README.md) |
 | MCP server | [`packages/mcp-server`](packages/mcp-server/README.md) |

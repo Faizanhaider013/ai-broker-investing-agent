@@ -18,7 +18,7 @@ apps/ai-broker-web/
 ```
 
 Route handlers under `app/api/` are meant to stay **thin** — parse, authorize,
-delegate to `packages/investing` or `packages/predictos`, serialize. Trading
+delegate to `packages/investing`, serialize. Trading
 logic does not belong in a route.
 
 ## Bindings
@@ -68,6 +68,23 @@ monorepo-root `.env`.
 
 **Never edit an applied migration.** Change `lib/db/schema.ts`, run
 `db:generate`, and commit the new migration file.
+
+**Commit the whole of `migrations/`, `meta/` included.** `meta/_journal.json`
+and the snapshots are what `db:generate` diffs against; without them it
+re-emits migrations that are already applied, and wrangler has nothing to
+apply. A schema column with no migration behind it is not a silent mismatch —
+Drizzle names every column of a table in its `INSERT`, so the first write to
+that table fails with `no such column`. `lib/db/__tests__/migrations.test.ts`
+fails the build when the schema and `migrations/` disagree.
+
+**`bun run deploy` and the deploy workflow apply migrations before the
+Worker**, in that order: new code against an old database fails on its first
+insert, while old code against a new database keeps working.
+Cloudflare Workers Builds does not: its default deploy command is plain
+`wrangler deploy`, so set it to `bun run deploy:cloudflare` (root script:
+migrate, then deploy). A Google sign-in failing with `unable_to_create_user` is
+this drift — see
+[`devdocs/RUNBOOK_UNABLE_TO_CREATE_USER.md`](../../devdocs/RUNBOOK_UNABLE_TO_CREATE_USER.md).
 
 ## Auth
 

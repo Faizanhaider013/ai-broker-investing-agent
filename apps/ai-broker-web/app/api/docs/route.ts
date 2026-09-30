@@ -1,33 +1,21 @@
+/**
+ * @fileoverview Redirect for the API reference's former address.
+ *
+ * The Scalar viewer moved up to `/api` (see `app/api/route.ts`). The README
+ * badges here point at `/api/docs`, and so does the copy of the
+ * `ai-broker-api-client` README already published to npm, which cannot be
+ * edited — so this stays as a permanent redirect rather than a 404.
+ */
 import { NextResponse } from 'next/server'
 
-const config = {
-  spec: {
-    url: '/api/openapi.json',
-  },
-  theme: 'solarized',
+/** Where the API reference now lives. */
+export const API_REFERENCE_PATH = '/api'
+
+function redirectToApiReference(request: Request): Response {
+  // 308 keeps the method and tells caches and crawlers the move is permanent,
+  // so the badges settle on the new URL instead of hopping every time.
+  return NextResponse.redirect(new URL(API_REFERENCE_PATH, request.url), 308)
 }
 
-export async function GET() {
-  const html = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>API Documentation</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-  </head>
-  <body>
-    <script
-      id="api-reference"
-      data-url="/api/openapi.json"
-      data-configuration='${JSON.stringify(config)}'></script>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
-  </body>
-</html>`
-
-  return new NextResponse(html, {
-    headers: {
-      'Content-Type': 'text/html',
-    },
-  })
-}
+export const GET = redirectToApiReference
+export const HEAD = redirectToApiReference
