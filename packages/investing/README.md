@@ -157,6 +157,48 @@ system. It assumes complementary YES/NO prices, does not model an order book,
 partial fills, fees, latency, settlement, or market resolution, and does not
 enable the existing unimplemented Kalshi live mapper.
 
+### Long Only EMA Strategy (stocks)
+
+A deterministic TypeScript port of the TradingView Pine strategy
+"Long Only EMA Strategy (9/20 with 200 EMA Filter)" (catalogued in
+`src/algo-stategies/algo-strategies.json`). It maps a series of OHLCV bars to a
+series of `TradeSignal`s and nothing more — it does not size positions, place
+orders, require credentials, or talk to a broker.
+
+Run the offline synthetic replay from `packages/investing`:
+
+```bash
+bun run demo:ema-crossover
+```
+
+```typescript
+import { evaluateEmaCrossover, getHistoricalQuotes } from "investing/stocks";
+
+const history = await getHistoricalQuotes("AAPL", "2023-01-01", "2024-01-01");
+const signals = evaluateEmaCrossover(history.data?.quotes ?? []);
+// signals: one TradeSignal per bar — { action, confidence, reasoning, timestamp }
+```
+
+Rules, faithful to the Pine source: **BUY** when EMA-9 crosses above EMA-20 and
+`close` is above EMA-200, while flat; **SELL** when `close` crosses below EMA-20
+and a long is open; otherwise **HOLD**. A second BUY is never emitted while a
+long is already open. Signals use the bar's own `date` as their `timestamp`, so
+replays are deterministic. The `close` price is used (matching Pine), and bars
+are accepted at whatever timeframe the caller supplies (both `HistoricalQuote`
+from `getHistoricalQuotes` and `HistoricalDataPoint` from the Yahoo wrapper fit
+the input shape).
+
+**Warm-up:** the first `warmupBars` bars (default `trendPeriod` = 200) are
+forced to HOLD so the 200 EMA has observed a full window before any trade; with
+fewer than `warmupBars` bars every signal is HOLD.
+
+**Signal timing:** a signal is emitted at the **close** of the bar on which the
+crossover is detected. TradingView's `strategy.entry` / `strategy.close` fill at
+the **next bar's open** by default, so a consumer that backtests these signals
+should fill at the following bar to reproduce the Pine results; filling at the
+same bar's close would introduce look-ahead. This port is a signal generator,
+not a backtest or live-execution system.
+
 ### Trading Agents Framework
 
 ```typescript
