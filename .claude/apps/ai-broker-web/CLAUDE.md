@@ -28,6 +28,21 @@ rule inside a route handler, it is in the wrong file.
 - **`/admin` is gated by `ADMIN_EMAILS`** (comma-separated). With neither
   `ADMIN_EMAILS` nor `ADMIN_EMAIL` set, nobody is an admin — that is the safe
   default, keep it.
+- **Admin sections** (`app/admin/*`, sidebar in `AdminNav.tsx`, modelled on
+  debate-ai's `debate-webview-admin`): Users, Prediction markets, Stocks, Top
+  traders, Database. Their APIs live under `app/api/admin/*` behind
+  `assertAdmin()`, with the query logic in `lib/admin/` (`listings.ts`,
+  `traders.ts`, `trader-sync.ts`) taking the drizzle handle as an argument so
+  tests run it on in-memory SQLite.
+- **Publishing lives in `listing_controls`, never on synced tables.** A row
+  per `pm-market:<id>` or `stock:<SYMBOL>`; no row means published. Market
+  syncs upsert `polymarket_markets` and must not reset admin decisions. The
+  public market queries (`packages/investing` `getMarkets`/`searchMarketsInDB`)
+  exclude unpublished markets; `/api/stocks/{trending,gainers,screener}` drop
+  hidden stocks; `/api/stocks/featured` lists featured ones.
+- **Cron routes check the secret with `isCronRequest()`** (`lib/auth/cron.ts`),
+  which reads `CRON_SECRET` through `serverEnv`. `process.env.CRON_SECRET` is
+  undefined on Workers, so scheduled runs were 401s.
 - **Vitest runs under Node — it does not prove the Worker works.** Use
   `bun run preview` (local miniflare D1) before shipping anything touching the
   Worker entrypoint, bindings, or crons.

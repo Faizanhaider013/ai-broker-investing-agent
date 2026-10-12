@@ -11,6 +11,7 @@ import { useSession } from "@/lib/auth/client"
 import { mockIndexes, mostTrending, highestBreakout, fallbackGlobalMarketIndices } from "./mock-data"
 import { useWatchlists } from "./use-watchlists"
 import { useGlobalMarkets } from "./use-global-markets"
+import { useFeaturedStocks } from "./use-featured-stocks"
 import { CreateListDialog } from "./create-list-dialog"
 import { RenameListDialog } from "./rename-list-dialog"
 import { MarketStatsCards } from "./market-stats-cards"
@@ -25,6 +26,7 @@ export function MarketScanner() {
   const [renameListName, setRenameListName] = useState("")
 
   const { globalMarkets, loading: loadingGlobalMarkets } = useGlobalMarkets()
+  const { featuredStocks } = useFeaturedStocks()
 
   const { watchlists, createList, deleteList, renameList } = useWatchlists({
     session,
@@ -77,6 +79,7 @@ export function MarketScanner() {
         <div className="w-full overflow-x-auto touch-pan-x pb-2">
           <TabsList>
             <TabsTrigger value="global-markets">Global Markets</TabsTrigger>
+            {featuredStocks.length > 0 && <TabsTrigger value="featured">Featured</TabsTrigger>}
             <TabsTrigger value="indexes">Indexes</TabsTrigger>
             <TabsTrigger value="trending">Trending</TabsTrigger>
             <TabsTrigger value="breakout">Breakout</TabsTrigger>
@@ -102,6 +105,17 @@ export function MarketScanner() {
             />
           )}
         </TabsContent>
+
+        {featuredStocks.length > 0 && (
+          <TabsContent value="featured">
+            <StockList
+              title="Featured"
+              description="Stocks picked by the AI Broker team"
+              mode="static"
+              initialStocks={featuredStocks}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="indexes">
           <StockList

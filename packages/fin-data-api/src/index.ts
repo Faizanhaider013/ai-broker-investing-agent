@@ -25,7 +25,10 @@ app.use(helmet({
   contentSecurityPolicy: false, // Disable for Scalar docs to work
 }));
 app.use(cors());
-app.use(compression());
+// @types/compression resolves @types/express 5 alongside this package's
+// express 4 types (no lockfile pins them), so its handler type does not
+// match `app.use`'s overloads even though it is the same function at runtime.
+app.use(compression() as unknown as express.RequestHandler);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

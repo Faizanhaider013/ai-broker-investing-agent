@@ -1,26 +1,38 @@
-import fetch from "node-fetch";
 import type { PolymarketCategory } from "../constants";
 
+export type LeaderboardTimePeriod = "all" | "1d" | "7d" | "30d";
+
+/** Most rows the data-api leaderboard returns per request. */
+export const LEADERBOARD_PAGE_LIMIT = 50;
+/** Highest offset the data-api leaderboard accepts. */
+export const LEADERBOARD_MAX_OFFSET = 1000;
+
+const TIME_PERIODS: Record<string, "DAY" | "WEEK" | "MONTH" | "ALL"> = {
+  all: "ALL",
+  "1d": "DAY",
+  "7d": "WEEK",
+  "30d": "MONTH",
+  day: "DAY",
+  week: "WEEK",
+  month: "MONTH",
+};
+
 /**
- * Fetches the Polymarket leaderboard with top traders ranked by volume or PnL.
- * @param options - Configuration options for the leaderboard query
- * @param options.timePeriod - Time period filter: "all", "1d", "7d", or "30d" (default: "all")
- * @param options.orderBy - Sort order: "VOL" for volume or "PNL" for profit/loss (default: "VOL")
- * @param options.limit - Maximum number of entries to retrieve (default: 20)
- * @param options.offset - Number of entries to skip for pagination (default: 0)
- * @param options.category - Category filter (default: "overall")
- * @returns Array of leaderboard entries
- * @throws Error if the API request fails
+ * Builds the data-api leaderboard URL. The API's enums are upper-case
+ * (`timePeriod=ALL`, `category=OVERALL`) and it rejects `limit` above 50 and
+ * `offset` above 1000, so the friendlier values callers pass ("all", "Overall",
+ * a limit of 100) are normalized here — sending them verbatim made every
+ * leaderboard sync fail with a 400.
  */
-export async function fetchLeaderboard(
+export function buildLeaderboardUrl(
   options: {
-    timePeriod?: "all" | "1d" | "7d" | "30d";
+    timePeriod?: LeaderboardTimePeriod | string;
     orderBy?: "VOL" | "PNL";
     limit?: number;
     offset?: number;
-    category?: PolymarketCategory | Lowercase<PolymarketCategory>;
+    category?: PolymarketCategory | Lowercase<PolymarketCategory> | string;
   } = {},
-) {
+): URL {
   const {
     timePeriod = "all",
     orderBy = "VOL",
@@ -29,19 +41,69 @@ export async function fetchLeaderboard(
     category = "Overall",
   } = options;
 
-  const url = new URL("https://data-api.polymarket.com/v1/leaderboard");
-  url.searchParams.set("timePeriod", timePeriod);
-  url.searchParams.set("orderBy", orderBy);
-  url.searchParams.set("limit", String(limit));
-  url.searchParams.set("offset", String(offset));
-  url.searchParams.set("category", category);
+  const period = TIME_PERIODS[String(timePeriod).toLowerCase()] ?? "ALL";
+  const safeLimit = Math.min(
+    LEADERBOARD_PAGE_LIMIT,
+    Math.max(1, Math.floor(Number(limit) || 1)),
+  );
+  const safeOffset = Math.min(
+    LEADERBOARD_MAX_OFFSET,
+    Math.max(0, Math.floor(Number(offset) || 0)),
+  );
 
-  const resp = await fetch(url, {
+  const url = new URL("https://data-api.polymarket.com/v1/leaderboard");
+  url.searchParams.set("timePeriod", period);
+  url.searchParams.set("orderBy", orderBy === "PNL" ? "PNL" : "VOL");
+  url.searchParams.set("limit", String(safeLimit));
+  url.searchParams.set("offset", String(safeOffset));
+  url.searchParams.set("category", String(category).toUpperCase());
+  return url;
+}
+
+/**
+ * Fetches one page of the Polymarket leaderboard, ranked by volume or PnL.
+ * @param options - Configuration options for the leaderboard query
+ * @param options.timePeriod - Time period filter: "all", "1d", "7d", or "30d" (default: "all")
+ * @param options.orderBy - Sort order: "VOL" for volume or "PNL" for profit/loss (default: "VOL")
+ * @param options.limit - Entries to retrieve, at most 50 (default: 20)
+ * @param options.offset - Entries to skip for pagination, at most 1000 (default: 0)
+ * @param options.category - Category filter (default: "Overall")
+ * @returns Array of leaderboard entries
+ * @throws Error if the API request fails
+ */
+export async function fetchLeaderboard(
+  options: Parameters<typeof buildLeaderboardUrl>[0] = {},
+): Promise<any[]> {
+  const resp = await fetch(buildLeaderboardUrl(options), {
     headers: { accept: "application/json" },
   });
 
   if (!resp.ok) throw new Error(`leaderboard fetch failed: ${resp.status}`);
-  return await resp.json();
+  const data = await resp.json();
+  return Array.isArray(data) ? data : [];
+}
+
+/**
+ * Fetches up to `limit` leaderboard entries, paging through the API's
+ * 50-row pages until it runs dry or the offset cap is reached.
+ */
+export async function fetchLeaderboardPages(
+  options: Omit<Parameters<typeof buildLeaderboardUrl>[0] & {}, "offset"> = {},
+): Promise<any[]> {
+  const total = Math.max(1, Math.floor(Number(options.limit) || 20));
+  const rows: any[] = [];
+  let offset = 0;
+
+  while (rows.length < total && offset <= LEADERBOARD_MAX_OFFSET) {
+    const pageSize = Math.min(LEADERBOARD_PAGE_LIMIT, total - rows.length);
+    const page = await fetchLeaderboard({ ...options, limit: pageSize, offset });
+    if (page.length === 0) break;
+    rows.push(...page);
+    if (page.length < pageSize) break;
+    offset += page.length;
+  }
+
+  return rows.slice(0, total);
 }
 
 /**

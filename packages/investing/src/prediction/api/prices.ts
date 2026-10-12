@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 
 /**
  * Fetches historical price data for a specific token/market.
