@@ -60,7 +60,7 @@ bundle. **Do not import `cloudflare:workers` here.**
 | `correlate/` | Time-series correlation / XGBoost prediction statistics |
 | `prediction/` | Market sync, analysis, API, and its own D1 tables |
 | `prediction-markets/` | Bookmaker / event-analysis / mapper agents, Polymarket order bots, venue clients, arbitrage. MIT — keep its `LICENSE` file. |
-| `stocks/`, `stock-names-data/` | Instruments and name resolution |
+| `stocks/`, `stock-names-data/` | Instruments, name resolution, and `strategies/` — deterministic, signal-only strategies over OHLCV bars (e.g. `evaluateEmaCrossover`, a port of the Pine "Long Only EMA" strategy) that return `TradeSignal[]` and never place orders |
 | `qwksearch/`, `trending-topics/` | News/web research feeding the news analyst |
 | `llm/` | Shared provider calls |
 | `db/` | Drizzle schema, D1 client, `d1-http` client |

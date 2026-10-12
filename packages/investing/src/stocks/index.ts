@@ -11,3 +11,5 @@ export * from './sec-filing-api';
 export * from './finnhub-wrapper';
 export * from './types';
 export * from './unified-quote-service';
+// Deterministic, signal-only trading strategies over OHLCV bars.
+export * from './strategies/ema-crossover';
