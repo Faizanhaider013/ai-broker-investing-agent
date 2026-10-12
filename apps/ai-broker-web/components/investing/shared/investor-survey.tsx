@@ -484,15 +484,7 @@ export default function InvestorSurvey() {
             </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
-
-    <div className="flex justify-center pb-12">
-      <Button size="lg" onClick={handleSubmit} className="px-12 shadow-lg" disabled={isSubmitting || submitSuccess}>
-        {isSubmitting ? "Submitting..." : submitSuccess ? "Submitted!" : "Submit Survey"}
-      </Button>
-    </div>
-  </main>
+      </main>
 
       {/* Footer */}
       <footer className="backdrop-blur-md bg-card/70 border-t border-border py-8">
