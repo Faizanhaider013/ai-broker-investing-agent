@@ -31,7 +31,11 @@
     "docs:generate:api": "turbo run docs:generate:api",
     "clean": "turbo run clean && rm -rf node_modules .turbo"
   },
+  "overrides": {
+    "mdast-util-to-markdown": "2.1.2"
+  },
   "devDependencies": {
+    "lightningcss": "^1.33.0",
     "turbo": "^2.5.8",
     "typescript": "^5.9.3",
     "wrangler": "^4.24.0"

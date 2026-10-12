@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "@/lib/auth/client"
+import { consumeSurveyPrompt } from "@/lib/survey/prompt"
 
 import { OverviewTab } from "@/components/investing/tabs/overview-tab"
 import { RiskPortfolioTab } from "@/components/investing/tabs/risk-portfolio-tab"
@@ -14,32 +15,6 @@ function PortfolioContent() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
   const [isInitializing, setIsInitializing] = useState(false)
-
-  // Initialize portfolio on first login and check survey completion
-  useEffect(() => {
-    const checkSurveyAndInitialize = async () => {
-      if (session?.user && !isPending) {
-        // Check if user has completed the survey
-        try {
-          const response = await fetch('/api/user/check-survey')
-          const data = await response.json()
-
-          if (!data.hasCompletedSurvey) {
-            router.push("/survey")
-            return
-          }
-
-          await initializePortfolio()
-        } catch (error) {
-          console.error("Error checking survey status:", error)
-          // Continue with initialization if check fails
-          await initializePortfolio()
-        }
-      }
-    }
-
-    checkSurveyAndInitialize()
-  }, [session, isPending, router])
 
   const initializePortfolio = async () => {
     try {
@@ -57,6 +32,13 @@ function PortfolioContent() {
       setIsInitializing(false)
     }
   }
+
+  // Initialize portfolio on first login (only for authenticated users)
+  useEffect(() => {
+    if (session?.user && !isPending) {
+      initializePortfolio()
+    }
+  }, [session, isPending])
 
   // Show loading state
   if (isPending || isInitializing) {

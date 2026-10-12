@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
   Brain,
@@ -25,6 +26,7 @@ import {
   Clock,
   AlertCircle,
   SlidersHorizontal,
+  ClipboardList,
 } from "lucide-react"
 
 import {
@@ -281,6 +283,7 @@ export function SettingsDialog({
   const [kycVerifiedAt, setKycVerifiedAt] = useState<Date | null>(null)
   const [startingKyc, setStartingKyc] = useState(false)
   const { tickerConfig, updateTickerConfig, saving: savingTickerConfig, saveConfig: saveTickerConfig } = useTickerConfig()
+  const router = useRouter()
 
   useEffect(() => {
     const saved = localStorage.getItem("color-theme")
@@ -515,6 +518,36 @@ export function SettingsDialog({
     <div className="space-y-6">
       <PremiumUpgrade />
 
+      {/* Investor Survey Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <ClipboardList className="h-5 w-5" />
+            <CardTitle>Investor Survey</CardTitle>
+          </div>
+          <CardDescription>
+            Help us understand your investment background so we can tailor the AI Broker experience to your needs.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            The survey covers your role, portfolio size, familiarity with prediction markets and AI-driven
+            trading, and your expectations for pricing. It takes about 3 minutes and is optional.
+          </p>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              setOpen(false)
+              router.push("/survey?returnTo=/dashboard/settings")
+            }}
+          >
+            <ClipboardList className="mr-2 h-4 w-4" />
+            Complete Investor Survey
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* KYC Verification Section */}
       <Card>
         <CardHeader>
@@ -617,6 +650,27 @@ export function SettingsDialog({
             </a>
             , a secure identity verification platform.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Investor Survey Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <ClipboardList className="h-5 w-5" />
+            <CardTitle>Investor Survey</CardTitle>
+          </div>
+          <CardDescription>
+            Tell us about your investing background so we can tailor AI Broker to you. You can take or retake it any time.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" asChild>
+            <a href="/survey">
+              <ClipboardList className="mr-2 h-4 w-4" />
+              Take the survey
+            </a>
+          </Button>
         </CardContent>
       </Card>
 
