@@ -1,0 +1,56 @@
+[package]
+name = "ai-broker-native-wrapper"
+version = "0.1.0"
+description = "Generic Tauri wrapper that packages any website as a native desktop + mobile app"
+authors = ["AI Broker"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "native_wrapper_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+tauri-plugin-deep-link = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"
+urlencoding = "2"
+
+# Desktop-only plugins: neither single-instance (used to route a second
+# deep-link launch's argv into the already-running app) nor the updater apply
+# to the mobile targets, which have their own OS-level equivalents (Android/
+# iOS both already dedupe app launches, and app-store updates replace
+# electron-updater/tauri-updater's job on mobile).
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
+tauri-plugin-autostart = "2"
+# Backs the fullscreen toggle: the window opens in true OS fullscreen by
+# default (profile "window.fullscreen"), which has no title bar to click a
+# restore button on, so an OS-level shortcut is the only reliable way out
+# regardless of what the wrapped page's own JS does.
+tauri-plugin-global-shortcut = "2"
+
+# Linux-only: WebKitGTK keeps getUserMedia and WebRTC off until its settings
+# turn them on (see src/media.rs). Same version and feature level wry uses.
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = { version = "2.0", features = ["v2_38"] }
+
+# Windows-only: the version, edition and build number of the running Windows
+# all live in one registry key, and reading it is the only way to get them
+# right — GetVersionEx reports a capped version unless the binary ships a
+# compatibility manifest naming every Windows it was tested on.
+[target.'cfg(target_os = "windows")'.dependencies]
+winreg = "0.52"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

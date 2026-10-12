@@ -13,7 +13,8 @@ declare global {
   }
 }
 
-export function SiweSignIn() {
+/** `redirectTo`: as on GoogleSignIn, a same-site path to go to once signed in. */
+export function SiweSignIn({ redirectTo }: { redirectTo?: string | null } = {}) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -77,6 +78,11 @@ export function SiweSignIn() {
       }
 
       if (data) {
+        if (redirectTo) {
+          window.location.replace(redirectTo)
+          return
+        }
+
         router.refresh()
 
         router.push((await consumeSurveyPrompt()) ? "/survey" : "/")
