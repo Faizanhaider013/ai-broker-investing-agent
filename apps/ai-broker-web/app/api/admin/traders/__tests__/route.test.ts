@@ -91,8 +91,8 @@ describe('POST /api/admin/traders/sync', () => {
   })
 
   it('syncs ZuluTrade', async () => {
-    const body = await (await sync({ source: 'zulu' })).json()
-    expect(syncZuluTraders).toHaveBeenCalled()
+    const body = await (await sync({ source: 'zulu', limit: 200 })).json()
+    expect(syncZuluTraders).toHaveBeenCalledWith({ limit: 200 })
     expect(body).toEqual({ success: true, source: 'zulu', synced: 75 })
   })
 

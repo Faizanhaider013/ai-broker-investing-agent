@@ -24,7 +24,7 @@ export async function syncTraderSource(
     return { source, synced: result.leaders };
   }
   if (source === "zulu") {
-    const result = await syncZuluTraders();
+    const result = await syncZuluTraders({ limit: options.limit });
     return { source, synced: result.traders };
   }
   // Resolves to the array of leaders it saved.
