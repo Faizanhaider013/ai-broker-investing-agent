@@ -125,6 +125,8 @@
     "react-dom": "19.2.8",
     "react-hook-form": "^7.71.1",
     "react-is": "^19.2.4",
+    "react-reason-editor": "^1.0.228",
+    "react-reason-editor-sidebar": "^0.1.214",
     "react-resizable-panels": "^4.6.2",
     "react-server-dom-webpack": "^19.2.8",
     "rehype-katex": "^7.0.1",

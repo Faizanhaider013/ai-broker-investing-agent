@@ -6,6 +6,8 @@
 /* The QwkSearch Research Agent (/research) is research-agent-ui from npm;
    its Tailwind classes must be registered or the chat UI ships unstyled. */
 @source "../node_modules/research-agent-ui/dist";
+@source "../node_modules/react-reason-editor/dist";
+@source "../node_modules/react-reason-editor-sidebar/dist";
 
 /* Legacy qwksearch color utilities (bg-light-primary, dark:bg-dark-secondary,
    border-light-200...) used throughout research-agent-ui, mapped onto this

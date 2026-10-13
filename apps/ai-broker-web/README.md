@@ -16,7 +16,7 @@ the D1 schema. This is the only workspace in the monorepo that ships.
 | Portfolio | `/portfolio`, `/dashboard` | Positions, entry/exit signals from `packages/investing`, and paper or broker execution through Alpaca. |
 | Prediction markets | `/predict` | Cross-venue prices and arbitrage spreads from `packages/investing/src/prediction-markets` (Polymarket, Kalshi). |
 | Copy trading | `/leaders` | Leaderboards of tracked traders and their disclosed positions. |
-| Research Agent | `/research` | The QwkSearch research agent (`research-agent-ui`, the same package debate-ai.com embeds): web search, cited answers and an article reader, run against qwksearch.com as the user's linked QwkSearch account or as a guest. Settings → QwkSearch links the account and holds the agent's settings. |
+| Research Agent | `/research` | The QwkSearch research agent (`research-agent-ui`, the same package debate-ai.com embeds): web search, cited answers and an article reader, run against qwksearch.com as the user's linked QwkSearch account or as a guest, alongside the REASON docs editor and its files sidebar. Documents are saved on the AI Broker account (`/api/doc/documents`, table `research_documents`) when signed in, and in the browser otherwise. Settings → QwkSearch links the account and holds the agent's settings. |
 | Accounts | `/login`, `/legal` | better-auth sign-in (Google, email, SIWE wallet), Stripe subscriptions via the better-auth plugin, Didit KYC at `/api/kyc`. |
 | Admin | `/admin` | User and D1 controls, gated on `ADMIN_EMAILS`. |
 | Docs | `/docs` | This project's documentation, Fumadocs over `content/docs`. |

@@ -64,6 +64,15 @@ rule inside a route handler, it is in the wrong file.
   (`preferences`). A new origin for this app must be added to qwksearch-web's
   connect allowlist (`apps/qwksearch-web/lib/auth/connect.ts`) or sign-in
   fails there.
+- **`/research` mounts the full workspace** (`research-agent-ui/workspace`:
+  chat tabs, the REASON docs editor and its files sidebar). The editor keeps
+  documents in `localStorage` and syncs them through `grab("doc/documents")`;
+  `components/qwksearch/doc-storage.ts` reroutes those calls from qwksearch.com
+  to this app's `/api/doc/documents` (table `research_documents`, keyed by
+  user + the editor's own id, PUT is an upsert) and, because the editor never
+  loads from the server itself, seeds `localStorage` from the account before
+  mounting. `/api/doc/uploads` forwards file uploads to QwkSearch with the
+  linked key.
 
 ## Layout
 

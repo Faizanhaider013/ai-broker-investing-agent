@@ -1,5 +1,6 @@
 import {
   index,
+  primaryKey,
   sqliteTable,
   text,
   integer,
@@ -707,3 +708,30 @@ export const qwksearchConnections = sqliteTable("qwksearch_connections", {
   preferences: text("preferences"),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
+
+/**
+ * The Research Agent's documents and folders (the REASON editor's files
+ * sidebar on /research), kept on the user's account so they follow them
+ * across devices. Keyed by the editor's own document id (a string it makes
+ * from `Date.now()`), unique per user, so a document the editor created
+ * offline can be written with a plain PUT. `isFolder`/`isExpanded` are 0/1
+ * and `metadata` is JSON text, the shape react-reason-editor's sync reads.
+ * See lib/qwksearch/documents.ts.
+ */
+export const researchDocuments = sqliteTable("research_documents", {
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  id: text("id").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull().default(""),
+  parentId: text("parent_id"),
+  isFolder: integer("is_folder").notNull().default(0),
+  isExpanded: integer("is_expanded").notNull().default(0),
+  metadata: text("metadata"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.id] }),
+  index("research_documents_user_updated_idx").on(table.userId, table.updatedAt),
+]);

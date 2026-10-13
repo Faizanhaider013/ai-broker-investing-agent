@@ -4,84 +4,66 @@
 // research-agent-ui's bundled qwksearch-api-client captures it.
 import "./base-url"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { ChatWindow, configureResearchAgentUI, useChat } from "research-agent-ui"
+import "react-reason-editor/style.css"
+import "react-reason-editor-sidebar/style.css"
+
+import { useCallback, useEffect, useState } from "react"
+import { MainViewProvider, ResearchWorkspaceView, configureResearchAgentUI } from "research-agent-ui/workspace"
 import { SettingsDialog } from "@/components/settings/settings-dialog"
+import { prepareDocStorage } from "./doc-storage"
 import { syncSavedPreferences } from "./preferences"
 import { QwksearchProviders } from "./Providers"
 
 /**
- * Wires the agent's chat links and settings button to AI Broker: a chat from
- * history opens in place (and is named in `?chat=` for reloads and sharing),
- * and "settings" opens AI Broker's settings dialog on its QwkSearch section
- * instead of a `/settings` route this app doesn't serve.
+ * The research workspace (chat tabs, the REASON docs editor and its files
+ * sidebar) with the agent's "settings" button opening AI Broker's settings
+ * dialog on its QwkSearch section, instead of a `/settings` route this app
+ * doesn't serve. The workspace itself keeps `?chat=` / `?docs=` in the URL
+ * and handles opening chats from history.
  */
-function ResearchChat() {
-  const { chatId, chatTurns, switchToChat } = useChat()
+function ResearchWorkspace() {
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const restored = useRef(false)
 
-  useEffect(() => {
-    if (restored.current) return
-    restored.current = true
-    const fromUrl = new URLSearchParams(window.location.search).get("chat")
-    if (fromUrl) switchToChat(fromUrl)
-  }, [switchToChat])
-
-  // Mirror the open chat into the address bar once it has a message, without
-  // a route transition (that would remount the agent).
-  useEffect(() => {
-    const url = new URL(window.location.href)
-    const next = chatId && chatTurns.length ? chatId : null
-    if ((url.searchParams.get("chat") ?? null) === next) return
-    if (next) url.searchParams.set("chat", next)
-    else url.searchParams.delete("chat")
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
-  }, [chatId, chatTurns.length])
-
-  const openChat = useCallback(
-    (id: string) => {
-      switchToChat(id)
-      return true
-    },
-    [switchToChat],
-  )
   const openSettings = useCallback(() => {
     setSettingsOpen(true)
     return true
   }, [])
 
   useEffect(() => {
-    configureResearchAgentUI({ onOpenChat: openChat, onOpenSettings: openSettings })
-    return () => configureResearchAgentUI({ onOpenChat: undefined, onOpenSettings: undefined })
-  }, [openChat, openSettings])
+    configureResearchAgentUI({ onOpenSettings: openSettings })
+    return () => configureResearchAgentUI({ onOpenSettings: undefined })
+  }, [openSettings])
 
   return (
     <>
-      <ChatWindow />
+      <ResearchWorkspaceView />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} initialSection="qwksearch" />
     </>
   )
 }
 
 /**
- * The QwkSearch research agent (research-agent-ui's chat, search and article
- * reader), running against qwksearch.com as the user's linked QwkSearch
- * account, or as a guest.
+ * The QwkSearch research agent (research-agent-ui's chat, search, article
+ * reader and REASON docs workspace), running against qwksearch.com as the
+ * user's linked QwkSearch account, or as a guest. Documents are stored on the
+ * AI Broker account (see ./doc-storage.ts).
  */
 export default function ResearchAgent() {
   const [ready, setReady] = useState(false)
 
-  // The agent reads its settings from localStorage once, as it mounts; copy
-  // the account's saved ones there first so they apply on this device too.
+  // The agent and the editor read their settings and documents from
+  // localStorage once, as they mount; copy the account's saved ones there
+  // first so they apply on this device too.
   useEffect(() => {
-    void syncSavedPreferences().finally(() => setReady(true))
+    void Promise.allSettled([syncSavedPreferences(), prepareDocStorage()]).finally(() => setReady(true))
   }, [])
 
   if (!ready) return null
   return (
     <QwksearchProviders>
-      <ResearchChat />
+      <MainViewProvider docsEnabled>
+        <ResearchWorkspace />
+      </MainViewProvider>
     </QwksearchProviders>
   )
 }
