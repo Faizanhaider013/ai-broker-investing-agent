@@ -13,3 +13,4 @@ export * from './types';
 export * from './unified-quote-service';
 // Deterministic, signal-only trading strategies over OHLCV bars.
 export * from './strategies/ema-crossover';
+export * from './strategies/bb-rsi-breakout';
