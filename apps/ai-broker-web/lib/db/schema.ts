@@ -683,3 +683,27 @@ export const listingControls = sqliteTable("listing_controls", {
 }, (table) => [
   index("listing_controls_kind_published_idx").on(table.kind, table.published),
 ]);
+
+// ============================================================================
+// QwkSearch research agent
+// ============================================================================
+
+/**
+ * The QwkSearch account a user linked through "Sign in with QwkSearch" (or by
+ * pasting a QwkSearch API key), plus their research-agent preferences. One row
+ * per user; see lib/qwksearch/.
+ *
+ * - `connection`: JSON `QwkSearchConnection` (API key, profile, plan) — null
+ *   while no QwkSearch account is linked. The key is the user's own and is
+ *   only ever returned to them, by `/api/qwksearch/session`.
+ * - `preferences`: JSON map of the research agent's client-side settings
+ *   (`research-agent-ui/settings`), so they follow the user across devices.
+ */
+export const qwksearchConnections = sqliteTable("qwksearch_connections", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  connection: text("connection"),
+  preferences: text("preferences"),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});

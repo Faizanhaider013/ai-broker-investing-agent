@@ -1,3 +1,4 @@
+import { Search } from "lucide-react"
 import {
   GraphChartIcon,
   PredictCheckboxesIcon,
@@ -32,6 +33,7 @@ export const dockNavigationGroups: DockNavigationGroup[] = [
     items: [
       { name: "Watch", href: "/markets", icon: MarketScreenerIcon },
       { name: "Copy", href: "/leaders", icon: CopyTradeIcon },
+      { name: "Research", href: "/research", icon: Search },
     ],
   },
   {

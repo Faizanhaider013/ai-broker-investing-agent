@@ -132,6 +132,7 @@
     "remark-gfm": "4.0.1",
     "remark-math": "^6.0.0",
     "remark-rehype": "11.1.2",
+    "research-agent-ui": "^0.1.293",
     "sass": "latest",
     "sec-edgar-toolkit": "^0.1.1",
     "siwe": "^3.0.0",

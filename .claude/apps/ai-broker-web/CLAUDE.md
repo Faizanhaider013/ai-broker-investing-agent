@@ -53,14 +53,26 @@ rule inside a route handler, it is in the wrong file.
   `/api/*` means adding it to the exempt list in
   `lib/turnstile/request-filter.ts`.
 
+- **The Research Agent (`/research`) is research-agent-ui from npm**, wired the
+  way debate-ai.com wires it: `components/qwksearch/base-url.ts` must stay the
+  first import of every entry that touches the package (its api-client
+  captures the base URL at module load), and `GrabBaseScope` scopes grab-url's
+  base URL to qwksearch.com only while the agent is mounted. "Sign in with
+  QwkSearch" (`app/api/qwksearch/*`, `lib/qwksearch/`) stores the user's
+  QwkSearch API key, profile and plan in `qwksearch_connections`, separate
+  from `user_settings`; the same row holds the agent's client-side settings
+  (`preferences`). A new origin for this app must be added to qwksearch-web's
+  connect allowlist (`apps/qwksearch-web/lib/auth/connect.ts`) or sign-in
+  fails there.
+
 ## Layout
 
 | Path | Owns |
 | --- | --- |
-| `app/` | Routes: `dashboard`, `markets`, `stock`, `portfolio`, `predict`, `debate`, `leaders`, `survey`, `legal`, `admin`, `login`, `docs` |
+| `app/` | Routes: `dashboard`, `markets`, `stock`, `portfolio`, `predict`, `debate`, `leaders`, `research`, `survey`, `legal`, `admin`, `login`, `docs` |
 | `app/api/` | Route handlers, including `api/cron/*` and `api/openapi.json` |
 | `components/` | App-local UI (shadcn; see `components.json`) |
-| `lib/` | `auth/`, `db/`, `ai/`, `alpaca/`, `admin/`, `openapi/`, `fumadocs/`, `email/`, `kyc/` |
+| `lib/` | `auth/`, `db/`, `ai/`, `alpaca/`, `admin/`, `openapi/`, `fumadocs/`, `email/`, `kyc/`, `qwksearch/` |
 | `content/docs/` | The **published** user documentation (docs.autoinvestment.broker) |
 | `migrations/` | D1 migrations, applied by wrangler |
 | `worker/index.ts` | Workers entrypoint: wraps vinext, routes crons, sets `__CLOUDFLARE_ENV__` |

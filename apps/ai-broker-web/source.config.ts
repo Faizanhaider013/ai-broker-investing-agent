@@ -123,6 +123,12 @@ export default defineConfig({
           id: 'package-manager',
         },
       },
+      // The preset's own remark-image pass fetches every remote image to
+      // measure it, so one unreachable favicon host fails the whole build.
+      // Leave remote images unmeasured, as the plugin below already asks.
+      remarkImageOptions: {
+        external: false,
+      },
       remarkPlugins: [
         remarkSteps,
         remarkMath,

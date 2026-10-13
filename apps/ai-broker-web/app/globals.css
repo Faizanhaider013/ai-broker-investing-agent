@@ -3,6 +3,42 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* The QwkSearch Research Agent (/research) is research-agent-ui from npm;
+   its Tailwind classes must be registered or the chat UI ships unstyled. */
+@source "../node_modules/research-agent-ui/dist";
+
+/* Legacy qwksearch color utilities (bg-light-primary, dark:bg-dark-secondary,
+   border-light-200...) used throughout research-agent-ui, mapped onto this
+   app's shadcn variables so the agent renders with the host theme. Same
+   mapping as debate-ai.com's app.css. */
+@theme {
+  --color-light-50: var(--background);
+  --color-light-100: var(--secondary);
+  --color-light-200: var(--border);
+  --color-light-300: var(--input);
+
+  --color-light-primary: var(--background);
+  --color-light-secondary: var(--secondary);
+
+  --color-dark-50: var(--background);
+  --color-dark-100: var(--secondary);
+  --color-dark-200: var(--border);
+  --color-dark-300: var(--input);
+
+  --color-dark-primary: var(--background);
+  --color-dark-secondary: var(--secondary);
+
+  --color-border-light-50: var(--background);
+  --color-border-light-100: var(--secondary);
+  --color-border-light-200: var(--border);
+  --color-border-light-300: var(--input);
+
+  --color-border-dark-50: var(--background);
+  --color-border-dark-100: var(--secondary);
+  --color-border-dark-200: var(--border);
+  --color-border-dark-300: var(--input);
+}
+
 
 
 /* apply to all SVGs in the page */
