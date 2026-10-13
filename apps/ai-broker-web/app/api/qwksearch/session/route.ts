@@ -30,7 +30,15 @@ export async function GET(request: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ connected: false }, { headers: noStore })
 
-  let connection = await loadConnection(db, session.user.id)
+  let connection
+  try {
+    connection = await loadConnection(db, session.user.id)
+  } catch (error) {
+    // The table missing (migration not applied) or D1 down: the agent still
+    // works signed out of QwkSearch, so report "not connected" over a 500.
+    console.warn("[qwksearch] connection lookup failed:", error)
+    return NextResponse.json({ connected: false }, { headers: noStore })
+  }
   if (connection && request.nextUrl.searchParams.get("refresh") === "1") {
     try {
       const profile = await describeKey(connection.apiKey)

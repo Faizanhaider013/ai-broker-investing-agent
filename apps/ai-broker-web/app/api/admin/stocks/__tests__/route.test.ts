@@ -159,10 +159,11 @@ describe('GET /api/stocks/featured (public)', () => {
     expect(mockAssertAdmin).not.toHaveBeenCalled()
   })
 
-  it('returns an empty list with a 500 when the lookup fails', async () => {
-    listings.getFeaturedStocks.mockRejectedValue(new Error('D1 down'))
+  it('serves an empty list, not a 500, when the lookup fails', async () => {
+    listings.getFeaturedStocks.mockRejectedValue(new Error('D1_ERROR: no such table: listing_controls'))
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const res = await FEATURED()
-    expect(res.status).toBe(500)
-    expect(await res.json()).toMatchObject({ success: false, data: [] })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ success: true, count: 0, data: [] })
   })
 })
