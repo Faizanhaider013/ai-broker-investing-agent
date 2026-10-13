@@ -51,8 +51,7 @@
 
 ## 📚 Documentation
 
-Full documentation lives at **[docs.autoinvestment.broker](https://docs.autoinvestment.broker/)**
-and its MDX source is in [`apps/ai-broker-web/content/docs`](apps/ai-broker-web/content/docs).
+Full documentation lives at **[autoinvestment.broker/docs](https://autoinvestment.broker/docs)**
 
 | Section | What's in it |
 | :--- | :--- |
