@@ -26,6 +26,7 @@ import {
   runConversion,
   planDryRun,
 } from "../scripts/pine-convert";
+import { checkConformance } from "../scripts/pine-conformance";
 
 // A tiny inline catalog so selection tests don't depend on the 2.8 MB file.
 const CATALOG: CatalogEntry[] = [
@@ -474,5 +475,196 @@ describe("tscValidator cleanup on failure (injected runner)", () => {
     expect(result.ok).toBe(false);
     expect(fs.existsSync(tsconfigPath)).toBe(false);
     expect(fs.existsSync(staged)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 2: conformance integration into the conversion loop.
+// ---------------------------------------------------------------------------
+
+describe("runConversion + conformance gate (injected)", () => {
+  const memWriter = () => (slug: string, attempt: number) => `mem://${slug}.attempt-${attempt}.ts`;
+  const okCode = "```ts\nexport const evaluateX = () => [];\n```";
+  const base = {
+    url: "aaa-strategy-one",
+    catalog: CATALOG,
+    validate: () => ({ ok: true, errors: [] } as ValidationResult),
+    writeAttempt: memWriter(),
+  };
+
+  it("leaves the tsc loop unchanged when no checker is injected (no-op default passes)", async () => {
+    const report = await runConversion({
+      ...base,
+      invoke: async () => okCode,
+    });
+    expect(report.validationStatus).toBe("passed");
+    expect(report.conformance.status).toBe("passed");
+    expect(report.conformance.findings).toEqual([]);
+  });
+
+  it("repairs on a conformance error, then passes once it clears", async () => {
+    let checks = 0;
+    const report = await runConversion({
+      ...base,
+      invoke: async () => okCode,
+      conformanceCheck: () => {
+        checks += 1;
+        return checks > 1
+          ? { ok: true, findings: [] }
+          : { ok: false, findings: [{ id: "x", severity: "error", message: "bad" }] };
+      },
+    });
+    expect(report.repairAttempts).toBe(1);
+    expect(report.attempts).toBe(2);
+    expect(report.validationStatus).toBe("passed");
+    expect(report.conformance.status).toBe("passed");
+  });
+
+  it("feeds conformance error messages into the repair prompt", async () => {
+    const prompts: ConversionPrompt[] = [];
+    await runConversion({
+      ...base,
+      invoke: async (p) => {
+        prompts.push(p);
+        return okCode;
+      },
+      conformanceCheck: () =>
+        prompts.length < 2
+          ? { ok: false, findings: [{ id: "disallowed-import", severity: "error", message: "CONFORMANCE_MSG_XYZ" }] }
+          : { ok: true, findings: [] },
+    });
+    // prompts[0] is the initial conversion prompt; prompts[1] is the repair.
+    expect(prompts.length).toBeGreaterThanOrEqual(2);
+    expect(prompts[1].user).toContain("CONFORMANCE_MSG_XYZ");
+    expect(prompts[1].user).toContain("Conformance findings");
+  });
+
+  it("passes the accumulated @unsupported markers and source features to the checker", async () => {
+    const seen: Array<{ unrepresentable?: readonly string[]; declared?: readonly string[] }> = [];
+    const outputs = [
+      "```ts\n// @unsupported: trailing stop - no price field\nexport const e = () => [];\n```",
+      "```ts\nexport const e = () => [];\n```",
+    ];
+    let i = 0;
+    await runConversion({
+      ...base,
+      invoke: async () => outputs[Math.min(i++, outputs.length - 1)],
+      analyzeFeatures: () => ["trailingStop", "pyramiding"],
+      conformanceCheck: (_code, ctx) => {
+        seen.push({ unrepresentable: ctx.unrepresentableFeatures, declared: ctx.declaredUnsupported });
+        return seen.length > 1
+          ? { ok: true, findings: [] }
+          : { ok: false, findings: [{ id: "y", severity: "error", message: "m" }] };
+      },
+    });
+    expect(seen[0].unrepresentable).toEqual(["trailingStop", "pyramiding"]);
+    expect(seen[0].declared).toContain("trailing stop - no price field");
+  });
+
+  it("stops after MAX_REPAIRS when conformance never clears, reporting the findings", async () => {
+    let calls = 0;
+    const report = await runConversion({
+      ...base,
+      invoke: async () => {
+        calls += 1;
+        return okCode;
+      },
+      conformanceCheck: () => ({
+        ok: false,
+        findings: [{ id: "persistent", severity: "error", message: "persist" }],
+      }),
+    });
+    expect(calls).toBe(MAX_REPAIRS + 1);
+    expect(report.repairAttempts).toBe(MAX_REPAIRS);
+    expect(report.validationStatus).toBe("passed"); // tsc stayed green
+    expect(report.conformance.status).toBe("failed");
+    expect(report.conformance.findings.map((f) => f.id)).toContain("persistent");
+  });
+
+  it("skips conformance entirely when tsc never passes (and never calls the checker)", async () => {
+    const report = await runConversion({
+      ...base,
+      invoke: async () => okCode,
+      validate: () => ({ ok: false, errors: ["tsc err"] }),
+      conformanceCheck: () => {
+        throw new Error("conformance must not run when tsc failed");
+      },
+    });
+    expect(report.validationStatus).toBe("failed");
+    expect(report.conformance.status).toBe("skipped");
+    expect(report.conformance.findings).toEqual([]);
+  });
+
+  it("treats a warning-only result as acceptable (no repair, status passed)", async () => {
+    const report = await runConversion({
+      ...base,
+      invoke: async () => okCode,
+      conformanceCheck: () => ({
+        ok: true,
+        findings: [{ id: "missing-warmup-guard", severity: "warn", message: "w" }],
+      }),
+    });
+    expect(report.repairAttempts).toBe(0);
+    expect(report.conformance.status).toBe("passed");
+    expect(report.conformance.findings.map((f) => f.id)).toContain("missing-warmup-guard");
+  });
+});
+
+describe("runConversion + real conformance checker (end-to-end)", () => {
+  const memWriter = () => (slug: string, attempt: number) => `mem://${slug}.attempt-${attempt}.ts`;
+  const CONFORMANT = [
+    "```ts",
+    'import type { TradeSignal } from "@/trading-agents/types";',
+    'import type { HistoricalQuote } from "@/stocks/quote-cache-service";',
+    "export interface ProbeConfig { warmupBars: number; }",
+    "export const DEFAULT_PROBE_CONFIG: ProbeConfig = { warmupBars: 1 };",
+    'export type ProbeBar = Pick<HistoricalQuote, "date" | "close">;',
+    "export function normalizeProbeConfig(c: Partial<ProbeConfig> = {}): ProbeConfig { return { ...DEFAULT_PROBE_CONFIG, ...c }; }",
+    "export function evaluateProbe(bars: readonly ProbeBar[]): TradeSignal[] {",
+    '  return bars.map((b) => ({ action: "HOLD" as const, confidence: 0, reasoning: "warm-up", timestamp: new Date(b.date) }));',
+    "}",
+    "```",
+  ].join("\n");
+  const base = {
+    url: "aaa-strategy-one",
+    catalog: CATALOG,
+    validate: () => ({ ok: true, errors: [] } as ValidationResult),
+    maxRepairs: 0,
+    writeAttempt: memWriter(),
+  };
+
+  it("passes a genuinely conformant module", async () => {
+    const report = await runConversion({
+      ...base,
+      invoke: async () => CONFORMANT,
+      conformanceCheck: checkConformance,
+      analyzeFeatures: () => [],
+    });
+    expect(report.conformance.status).toBe("passed");
+    expect(report.conformance.findings).toEqual([]);
+  });
+
+  it("fails a non-conformant module with missing-export errors", async () => {
+    const report = await runConversion({
+      ...base,
+      invoke: async () => "```ts\nexport const evaluateX = () => [];\n```",
+      conformanceCheck: checkConformance,
+      analyzeFeatures: () => [],
+    });
+    expect(report.conformance.status).toBe("failed");
+    expect(report.conformance.findings.some((f) => f.id.startsWith("missing-export"))).toBe(true);
+  });
+
+  it("surfaces an undeclared-unsupported WARNING without failing the gate", async () => {
+    const report = await runConversion({
+      ...base,
+      invoke: async () => CONFORMANT,
+      conformanceCheck: checkConformance,
+      analyzeFeatures: () => ["trailingStop"],
+    });
+    expect(report.conformance.status).toBe("passed"); // warning does not block
+    expect(report.conformance.findings.some((f) => f.id === "undeclared-unsupported:trailingStop")).toBe(
+      true,
+    );
   });
 });
