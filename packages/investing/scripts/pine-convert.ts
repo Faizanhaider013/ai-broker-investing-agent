@@ -32,6 +32,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { callOpenAIResponses } from "../src/prediction-markets/ai/callOpenAI";
+// Type-only import: erased at runtime, so it introduces NO module edge and no
+// load-order concern. The real checker is injected (CLI wires it via dynamic
+// import of the standalone pine-conformance / pine-features leaf modules).
+import type {
+  ConformanceChecker,
+  ConformanceContext,
+  ConformanceFinding,
+  ConformanceResult,
+} from "./pine-conformance";
 
 const SCRIPT_DIR = fileURLToPath(new URL(".", import.meta.url));
 /** Package root (`packages/investing`). */
@@ -96,6 +105,18 @@ export interface ConversionReport {
   errors: string[];
   unsupportedFeatures: string[];
   stagedFile?: string;
+  /**
+   * Static conformance gate result. It runs ONLY after a successful `tsc`
+   * validation, so `status` is `"skipped"` whenever the final attempt never
+   * type-checked. `"failed"` means at least one `error`-severity finding
+   * remained after the repair budget; `"passed"` means no error-severity
+   * findings (warnings may still be present in `findings`). These are static
+   * checks and never prove semantic equivalence to the Pine source.
+   */
+  conformance: {
+    status: "passed" | "failed" | "skipped";
+    findings: ConformanceFinding[];
+  };
 }
 
 export interface DryRunPlan {
@@ -271,22 +292,35 @@ export function buildRepairPrompt(
   version: PineVersion,
   previousCode: string,
   errors: string[],
+  conformanceErrors: string[] = [],
 ): ConversionPrompt {
   const base = buildConversionPrompt(entry, version);
-  const user = [
+  const lines: string[] = [
     "Your previous TypeScript port failed static validation. Fix ONLY what the errors require; keep the trading logic faithful.",
     "",
-    "## Validation errors",
-    errors.join("\n") || "(no error text captured)",
-    "",
+  ];
+  if (errors.length > 0) {
+    lines.push("## Validation errors", errors.join("\n"), "");
+  }
+  if (conformanceErrors.length > 0) {
+    lines.push(
+      "## Conformance findings (project signal-only convention — must fix)",
+      conformanceErrors.join("\n"),
+      "",
+    );
+  }
+  if (errors.length === 0 && conformanceErrors.length === 0) {
+    lines.push("## Validation errors", "(no error text captured)", "");
+  }
+  lines.push(
     "## Your previous output",
     "```ts",
     previousCode.trim(),
     "```",
     "",
     "Return the corrected, complete module in a single ```ts code block.",
-  ].join("\n");
-  return { system: base.system, user };
+  );
+  return { system: base.system, user: lines.join("\n") };
 }
 
 /** Build the ephemeral tsconfig used to type-check one staged file. */
@@ -486,6 +520,20 @@ export interface RunConversionOptions {
   maxRepairs?: number;
   /** Writer for a given attempt; returns the staged path. Injectable for tests. */
   writeAttempt?: (slug: string, attempt: number, code: string) => string;
+  /**
+   * Static conformance checker, run on the generated code ONLY after a
+   * successful `tsc` validation. Defaults to a no-op that always passes, so
+   * callers exercising just the `tsc` loop are unaffected; the CLI injects the
+   * real {@link ConformanceChecker} (via a dynamic import, to avoid a module
+   * cycle). Error-severity findings drive repairs; warnings are reported only.
+   */
+  conformanceCheck?: ConformanceChecker;
+  /**
+   * Extracts the source-side unrepresentable feature ids used for the
+   * conformance cross-check (produced by `detectUnrepresentableFeatures`).
+   * Defaults to none; the CLI wires it to the real analyzer.
+   */
+  analyzeFeatures?: (source: string) => readonly string[];
 }
 
 function defaultWriteAttempt(runDir: string): (slug: string, attempt: number, code: string) => string {
@@ -508,6 +556,11 @@ export async function runConversion(options: RunConversionOptions): Promise<Conv
 
   const writeAttempt =
     options.writeAttempt ?? defaultWriteAttempt(path.join(STAGING_DIR, slug));
+  // Default to a no-op gate so callers that only test the tsc loop keep their
+  // exact behaviour; the CLI injects the real checker.
+  const conformanceCheck: ConformanceChecker =
+    options.conformanceCheck ?? (() => ({ ok: true, findings: [] }));
+  const analyzeFeatures = options.analyzeFeatures ?? (() => []);
 
   let attempts = 0;
   let repairAttempts = 0;
@@ -517,8 +570,47 @@ export async function runConversion(options: RunConversionOptions): Promise<Conv
   let result: ValidationResult = { ok: false, errors: [] };
   // Accumulate limitations across every attempt so a feature flagged by an
   // earlier attempt is never lost if a later repair omits it. Set preserves
-  // first-seen order and deduplicates.
+  // first-seen order and deduplicates. This same accumulated set feeds the
+  // conformance cross-check as the declared `@unsupported:` markers.
   const unsupportedFeatures = new Set<string>();
+
+  // Conformance state reflects the MOST RECENT attempt. It is only populated
+  // when that attempt passed `tsc` (conformance runs after type validation).
+  let conformance: ConformanceResult = { ok: true, findings: [] };
+  let conformanceRan = false;
+
+  const buildConformanceContext = (): ConformanceContext => ({
+    unrepresentableFeatures: analyzeFeatures(entry.source ?? ""),
+    // Preserve every marker seen so far, not just the current attempt's.
+    declaredUnsupported: [...unsupportedFeatures],
+    name,
+  });
+
+  // Validate the current staged attempt: tsc first, then conformance only if
+  // tsc passed. Resets conformance state when tsc fails so a stale pass from an
+  // earlier attempt is never reported.
+  const evaluateAttempt = (): void => {
+    result = options.validate(stagedFile as string);
+    if (result.ok) {
+      conformance = conformanceCheck(code, buildConformanceContext());
+      conformanceRan = true;
+    } else {
+      conformance = { ok: true, findings: [] };
+      conformanceRan = false;
+    }
+  };
+
+  // Error-severity findings are the only ones that drive repairs; warnings are
+  // advisory and surfaced in the report instead.
+  const conformanceErrorMessages = (): string[] =>
+    conformanceRan
+      ? conformance.findings.filter((f) => f.severity === "error").map((f) => f.message)
+      : [];
+
+  // An attempt is accepted only when it both type-checks and clears the
+  // conformance gate. (When tsc fails, conformance did not run and defaults to
+  // ok, but `result.ok` is false, so the attempt is still rejected.)
+  const accepted = (): boolean => result.ok && conformance.ok;
 
   // Initial generation.
   rawOutput = await options.invoke(buildConversionPrompt(entry, version));
@@ -526,20 +618,29 @@ export async function runConversion(options: RunConversionOptions): Promise<Conv
   for (const feature of parseUnsupportedFeatures(rawOutput)) unsupportedFeatures.add(feature);
   attempts += 1;
   stagedFile = writeAttempt(slug, 0, code);
-  result = options.validate(stagedFile);
+  evaluateAttempt();
 
-  // Bounded repair loop.
-  while (!result.ok && repairAttempts < maxRepairs) {
+  // Bounded repair loop: repairs when tsc failed OR conformance flagged an
+  // error. The repair budget is unchanged (default MAX_REPAIRS).
+  while (!accepted() && repairAttempts < maxRepairs) {
     repairAttempts += 1;
-    rawOutput = await options.invoke(buildRepairPrompt(entry, version, code, result.errors));
+    rawOutput = await options.invoke(
+      buildRepairPrompt(entry, version, code, result.errors, conformanceErrorMessages()),
+    );
     code = extractTypeScript(rawOutput);
     for (const feature of parseUnsupportedFeatures(rawOutput)) unsupportedFeatures.add(feature);
     attempts += 1;
     stagedFile = writeAttempt(slug, repairAttempts, code);
-    result = options.validate(stagedFile);
-    if (result.ok) break;
+    evaluateAttempt();
+    if (accepted()) break;
     // Stop immediately once the repair limit is reached.
   }
+
+  const conformanceStatus: "passed" | "failed" | "skipped" = conformanceRan
+    ? conformance.ok
+      ? "passed"
+      : "failed"
+    : "skipped";
 
   return {
     url: entry.url,
@@ -551,6 +652,10 @@ export async function runConversion(options: RunConversionOptions): Promise<Conv
     errors: result.ok ? [] : result.errors,
     unsupportedFeatures: [...unsupportedFeatures],
     stagedFile,
+    conformance: {
+      status: conformanceStatus,
+      findings: conformanceRan ? conformance.findings : [],
+    },
   };
 }
 
@@ -605,15 +710,26 @@ async function main(): Promise<void> {
 
   const model = typeof args.model === "string" ? args.model : undefined;
   const maxRepairs = typeof args["max-repairs"] === "string" ? Number(args["max-repairs"]) : MAX_REPAIRS;
+  // Dynamic imports keep the conformance/features modules off pine-convert's
+  // static import graph; they only load on --run.
+  const { checkConformance } = await import("./pine-conformance");
+  const { detectUnrepresentableFeatures } = await import("./pine-features");
   const report = await runConversion({
     url,
     catalogPath: typeof args.catalog === "string" ? args.catalog : undefined,
     invoke: defaultOpenAIInvoker(model),
     validate: tscValidator(),
     maxRepairs,
+    conformanceCheck: checkConformance,
+    analyzeFeatures: (source) => detectUnrepresentableFeatures(source),
   });
   console.log(JSON.stringify({ mode: "run", report }, null, 2));
-  if (report.validationStatus !== "passed") process.exit(1);
+  // Fail the run if the port never type-checked OR left an unresolved
+  // conformance error. A "skipped" conformance (tsc failed) is already covered
+  // by the validationStatus check.
+  const succeeded =
+    report.validationStatus === "passed" && report.conformance.status !== "failed";
+  if (!succeeded) process.exit(1);
 }
 
 // Only run the CLI when executed directly, never when imported by tests.
