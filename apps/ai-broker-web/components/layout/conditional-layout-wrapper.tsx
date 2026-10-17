@@ -16,10 +16,22 @@ export function ConditionalLayoutWrapper({
   const isDocsPage = pathname.startsWith("/docs")
   const isAdminPage = pathname.startsWith("/admin")
   const isHomepage = pathname === "/"
+  const isResearchPage = pathname === "/research" || pathname.startsWith("/research/")
 
   if (isAdminPage) {
     // The admin area brings its own nav and needs the full width for wide
     // tables; the app sidebar, stock ticker and mobile dock are not part of it.
+    return (
+      <>
+        {children}
+        <Toaster position="top-right" />
+      </>
+    )
+  }
+
+  if (isResearchPage) {
+    // The research agent (research-agent-ui) renders its own shell, so do not
+    // nest the app sidebar inside it — two sidebars would overlay each other.
     return (
       <>
         {children}

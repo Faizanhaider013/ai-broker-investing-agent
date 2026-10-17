@@ -1,3 +1,4 @@
+import { firstClobTokenId } from "../utils/token-ids";
 import { fetchAllMarkets } from "../api/markets";
 import { fetchMarketDetails, fetchMarketsDashboard } from "../api/analytics";
 import { saveMarkets } from "../db/markets";
@@ -43,10 +44,10 @@ export async function syncMarketsIncremental(
 
         await Promise.allSettled(
           batch.map(async (market: any) => {
-            if (market.clobTokenIds && market.clobTokenIds.length > 0) {
+            if (firstClobTokenId(market.clobTokenIds)) {
               try {
                 // Fetch history for the first token (typically "Yes" outcome)
-                const tokenId = market.clobTokenIds[0];
+                const tokenId = firstClobTokenId(market.clobTokenIds) as string;
 
                 // Validate token ID before fetching
                 if (

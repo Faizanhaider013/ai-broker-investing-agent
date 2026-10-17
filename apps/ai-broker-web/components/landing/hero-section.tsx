@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { Spotlight } from "@/components/ui/spotlight-new"
 import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern"
-import { BorderBeam } from "@/components/ui/border-beam"
 import { Marquee } from "@/components/ui/marquee"
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
@@ -167,16 +166,14 @@ export function HeroSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative w-full"
           >
-            <div className="pointer-events-none absolute -inset-8 rounded-[2rem] bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-violet-500/15 blur-2xl animate-hero-glow-pulse" />
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border/50 bg-background/50 backdrop-blur-sm aspect-video">
+            <div className="relative aspect-video">
               <iframe
                 className="absolute inset-0 w-full h-full"
-                src="https://www.youtube.com/embed/Sns0krBn5WA?autoplay=1&mute=1&controls=0&loop=1&playlist=Sns0krBn5WA&rel=0"
-                title="Auto-invest Demo"
+                src="https://www.youtube.com/embed/N5cHK6K50Ds?autoplay=1&mute=1&loop=1&playlist=N5cHK6K50Ds&rel=0&playsinline=1"
+                title="How the agent team builds one thesis"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
-              <BorderBeam size={80} duration={7} />
             </div>
 
             {/* Floating signal card */}

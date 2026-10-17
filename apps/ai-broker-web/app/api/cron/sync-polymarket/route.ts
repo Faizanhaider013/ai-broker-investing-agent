@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { syncMarketsIncremental, syncLeadersAndCategories } from '@/packages/investing/src/prediction'
 import { auth } from '@/lib/auth'
+import { isCronRequest } from '@/lib/auth/cron'
 import { headers } from 'next/headers'
 
 /**
@@ -9,12 +10,8 @@ import { headers } from 'next/headers'
  * and syncs leaders and categories
  */
 export async function GET(request: NextRequest) {
-  // Check for CRON_SECRET for automated cron jobs
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  // Allow access if valid CRON_SECRET is provided (for automated jobs)
-  const isCronJob = cronSecret && authHeader === `Bearer ${cronSecret}`
+  // Allow access if a valid CRON_SECRET bearer token is provided (scheduled runs)
+  const isCronJob = isCronRequest(request.headers.get('authorization'))
 
   // Otherwise, require user authentication
   if (!isCronJob) {

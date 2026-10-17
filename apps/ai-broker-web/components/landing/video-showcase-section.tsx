@@ -1,12 +1,7 @@
-import { VideoLightbox } from "@/components/landing/video-lightbox"
-
 /**
- * Standalone section for the agent-team walkthrough video.
- *
- * The video used to sit as a thumbnail in the corner of the agents section
- * header, small enough to read as a footnote. It carries the clearest
- * explanation of how the agents work together, so it gets its own titled
- * section at a size worth clicking.
+ * Standalone "Watch" section. Holds the auto-invest demo video, which swapped
+ * places with the agent-team walkthrough now playing in the hero. It plays
+ * inline, with no card frame around it.
  */
 export function VideoShowcaseSection() {
   return (
@@ -25,12 +20,16 @@ export function VideoShowcaseSection() {
           </p>
         </div>
 
-        <VideoLightbox
-          videoId="N5cHK6K50Ds"
-          title="How the agent team builds one thesis"
-          caption="How the agent team builds one thesis"
-          className="mt-10 w-full"
-        />
+        <div className="relative mt-10 aspect-video w-full">
+          <iframe
+            className="absolute inset-0 h-full w-full"
+            src="https://www.youtube.com/embed/Sns0krBn5WA?rel=0&playsinline=1"
+            title="Auto-invest Demo"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        </div>
       </div>
     </section>
   )

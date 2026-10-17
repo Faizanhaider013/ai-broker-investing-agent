@@ -3,10 +3,12 @@
 ## Workspaces
 
 ```json
-"workspaces": ["apps/*", "packages/*"]
+"workspaces": ["apps/ai-broker-web", "packages/*"]
 ```
 
-Note what is *not* in that list: `third-party-trading-bots/` and `devdocs/`.
+Note what is *not* in that list: `third-party-trading-bots/`, `devdocs/`, and
+`apps/ai-broker-native-wrapper` (the Tauri desktop/mobile shell, which has its
+own install, Rust build and CI; see its note under `.claude/apps/`).
 Turbo only fans out into apps and packages.
 
 ## Bun, and no lockfile

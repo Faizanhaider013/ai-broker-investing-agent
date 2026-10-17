@@ -157,16 +157,34 @@ jobs:
         working-directory: .
         run: bunx turbo run build --filter=./apps/${{ matrix.app }}...
 
+      # Secrets pasted into the GitHub UI can carry a trailing newline, and
+      # wrangler rejects the account ID outright ("Account IDs may only contain
+      # alphanumeric characters…"), which failed every migration step and kept
+      # production D1 behind the schema. Trim each value once and export it for
+      # the steps below; a step-level `env:` would override these, so the
+      # wrangler steps must not set their own.
+      - name: Load Cloudflare credentials
+        env:
+          CF_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CF_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export_trimmed() {
+            local value
+            value="$(printf '%s' "$2" | tr -d '[:space:]')"
+            [[ -n "${value}" ]] && echo "::add-mask::${value}"
+            echo "$1=${value}" >> "${GITHUB_ENV}"
+          }
+          export_trimmed CLOUDFLARE_API_KEY "${CF_API_KEY}"
+          export_trimmed CLOUDFLARE_EMAIL "${CF_EMAIL}"
+          export_trimmed CLOUDFLARE_ACCOUNT_ID "${CF_ACCOUNT_ID}"
+
       # Before the Worker, never after: the new code writes every column its
       # Drizzle schema declares, so a D1 database still on the old schema fails
       # the very first insert. Wrangler applies only the migrations that the
       # database has not recorded yet, so this is a no-op once it is current.
       - name: Apply D1 migrations
         if: hashFiles(format('apps/{0}/migrations/*.sql', matrix.app)) != ''
-        env:
-          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
-          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if jq -e '.scripts["db:migrate:remote"]' package.json > /dev/null; then
             bun run db:migrate:remote
@@ -175,8 +193,4 @@ jobs:
           fi
 
       - name: Deploy Worker with Wrangler
-        env:
-          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
-          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: bunx wrangler deploy

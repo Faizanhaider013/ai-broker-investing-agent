@@ -1,0 +1,85 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AI Broker",
+  "version": "1.0.0",
+  "identifier": "broker.autoinvestment.app",
+  "build": {
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "AI Broker",
+        "url": "index.html",
+        "width": 1360,
+        "height": 860,
+        "minWidth": 480,
+        "minHeight": 480,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "capabilities": [
+        "default",
+        "remote"
+      ]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "publisher": "AI Broker",
+    "copyright": "AI Broker",
+    "category": "Finance",
+    "shortDescription": "AI analyst agents, algorithmic entry/exit signals, copy-trading leaderboards and prediction markets, in one native app.",
+    "longDescription": "AI analyst agents, algorithmic entry/exit signals, copy-trading leaderboards and prediction markets, in one native app.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "entitlements": "./Entitlements.plist"
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    },
+    "android": {
+      "minSdkVersion": 24
+    },
+    "iOS": {
+      "minimumSystemVersion": "14.0"
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "aibroker"
+        ]
+      },
+      "mobile": [
+        {
+          "scheme": [
+            "aibroker"
+          ],
+          "appLink": false
+        }
+      ]
+    }
+  }
+}

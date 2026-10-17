@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 
 // Polymarket Data API types
 export interface PolymarketHolder {

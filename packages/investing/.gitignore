@@ -5,3 +5,6 @@ dist/
 .env.*
 .DS_Store
 coverage/
+
+# Generated, unreviewed output from scripts/pine-convert.ts
+.pine-convert/
