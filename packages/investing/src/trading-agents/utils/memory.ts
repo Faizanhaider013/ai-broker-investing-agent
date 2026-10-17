@@ -55,14 +55,18 @@ export class FinancialSituationMemory {
    * Can be enhanced with more sophisticated methods like cosine similarity with embeddings
    */
   private calculateSimilarity(text1: string, text2: string): number {
-    const words1 = this.tokenize(text1)
-    const words2 = this.tokenize(text2)
+    const words1 = new Set(this.tokenize(text1))
+    const words2 = new Set(this.tokenize(text2))
 
-    const intersection = words1.filter(word => words2.includes(word))
     const union = new Set([...words1, ...words2])
+    // No surviving tokens on either side: similarity is undefined, treat as 0.
+    if (union.size === 0) return 0
+
+    let intersection = 0
+    for (const word of words1) if (words2.has(word)) intersection++
 
     // Jaccard similarity
-    return intersection.length / union.size
+    return intersection / union.size
   }
 
   /**
