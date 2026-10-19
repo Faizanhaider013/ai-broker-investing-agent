@@ -54,5 +54,9 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
+  // @cloudflare/vite-plugin turns source-map uploads on whenever the build emits
+  // maps, and ours exceed Cloudflare's 15MB gzipped limit (deploy error 10021).
+  // An explicit false here carries into the generated deploy config.
+  "upload_source_maps": false
 }
