@@ -28,6 +28,21 @@ rule inside a route handler, it is in the wrong file.
 - **`/admin` is gated by `ADMIN_EMAILS`** (comma-separated). With neither
   `ADMIN_EMAILS` nor `ADMIN_EMAIL` set, nobody is an admin — that is the safe
   default, keep it.
+- **Admin sections** (`app/admin/*`, sidebar in `AdminNav.tsx`, modelled on
+  debate-ai's `debate-webview-admin`): Users, Prediction markets, Stocks, Top
+  traders, Database. Their APIs live under `app/api/admin/*` behind
+  `assertAdmin()`, with the query logic in `lib/admin/` (`listings.ts`,
+  `traders.ts`, `trader-sync.ts`) taking the drizzle handle as an argument so
+  tests run it on in-memory SQLite.
+- **Publishing lives in `listing_controls`, never on synced tables.** A row
+  per `pm-market:<id>` or `stock:<SYMBOL>`; no row means published. Market
+  syncs upsert `polymarket_markets` and must not reset admin decisions. The
+  public market queries (`packages/investing` `getMarkets`/`searchMarketsInDB`)
+  exclude unpublished markets; `/api/stocks/{trending,gainers,screener}` drop
+  hidden stocks; `/api/stocks/featured` lists featured ones.
+- **Cron routes check the secret with `isCronRequest()`** (`lib/auth/cron.ts`),
+  which reads `CRON_SECRET` through `serverEnv`. `process.env.CRON_SECRET` is
+  undefined on Workers, so scheduled runs were 401s.
 - **Vitest runs under Node — it does not prove the Worker works.** Use
   `bun run preview` (local miniflare D1) before shipping anything touching the
   Worker entrypoint, bindings, or crons.
@@ -38,14 +53,35 @@ rule inside a route handler, it is in the wrong file.
   `/api/*` means adding it to the exempt list in
   `lib/turnstile/request-filter.ts`.
 
+- **The Research Agent (`/research`) is research-agent-ui from npm**, wired the
+  way debate-ai.com wires it: `components/qwksearch/base-url.ts` must stay the
+  first import of every entry that touches the package (its api-client
+  captures the base URL at module load), and `GrabBaseScope` scopes grab-url's
+  base URL to qwksearch.com only while the agent is mounted. "Sign in with
+  QwkSearch" (`app/api/qwksearch/*`, `lib/qwksearch/`) stores the user's
+  QwkSearch API key, profile and plan in `qwksearch_connections`, separate
+  from `user_settings`; the same row holds the agent's client-side settings
+  (`preferences`). A new origin for this app must be added to qwksearch-web's
+  connect allowlist (`apps/qwksearch-web/lib/auth/connect.ts`) or sign-in
+  fails there.
+- **`/research` mounts the full workspace** (`research-agent-ui/workspace`:
+  chat tabs, the REASON docs editor and its files sidebar). The editor keeps
+  documents in `localStorage` and syncs them through `grab("doc/documents")`;
+  `components/qwksearch/doc-storage.ts` reroutes those calls from qwksearch.com
+  to this app's `/api/doc/documents` (table `research_documents`, keyed by
+  user + the editor's own id, PUT is an upsert) and, because the editor never
+  loads from the server itself, seeds `localStorage` from the account before
+  mounting. `/api/doc/uploads` forwards file uploads to QwkSearch with the
+  linked key.
+
 ## Layout
 
 | Path | Owns |
 | --- | --- |
-| `app/` | Routes: `dashboard`, `markets`, `stock`, `portfolio`, `predict`, `debate`, `leaders`, `survey`, `legal`, `admin`, `login`, `docs` |
+| `app/` | Routes: `dashboard`, `markets`, `stock`, `portfolio`, `predict`, `debate`, `leaders`, `research`, `survey`, `legal`, `admin`, `login`, `docs` |
 | `app/api/` | Route handlers, including `api/cron/*` and `api/openapi.json` |
 | `components/` | App-local UI (shadcn; see `components.json`) |
-| `lib/` | `auth/`, `db/`, `ai/`, `alpaca/`, `admin/`, `openapi/`, `fumadocs/`, `email/`, `kyc/` |
+| `lib/` | `auth/`, `db/`, `ai/`, `alpaca/`, `admin/`, `openapi/`, `fumadocs/`, `email/`, `kyc/`, `qwksearch/` |
 | `content/docs/` | The **published** user documentation (docs.autoinvestment.broker) |
 | `migrations/` | D1 migrations, applied by wrangler |
 | `worker/index.ts` | Workers entrypoint: wraps vinext, routes crons, sets `__CLOUDFLARE_ENV__` |

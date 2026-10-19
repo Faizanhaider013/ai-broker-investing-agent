@@ -5,8 +5,11 @@ import { getLeaders, syncLeaderboard } from '@/packages/investing/src/prediction
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const source = searchParams.get('source') || 'zulu'
-  const limit = parseInt(searchParams.get('limit') || '50')
-  const orderBy = searchParams.get('orderBy') as 'vol' | 'pnl' | 'overallGain' || 'vol'
+  const parsedLimit = parseInt(searchParams.get('limit') || '50', 10)
+  const limit = Number.isNaN(parsedLimit) ? 50 : Math.min(200, Math.max(1, parsedLimit))
+  const rawOrderBy = searchParams.get('orderBy')
+  const orderBy: 'vol' | 'pnl' | 'overallGain' =
+    rawOrderBy === 'pnl' || rawOrderBy === 'overallGain' ? rawOrderBy : 'vol'
   const sync = searchParams.get('sync') === 'true'
 
   try {

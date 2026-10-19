@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { siwe } from "better-auth/plugins";
+import { oneTimeToken, siwe } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "../db";
 import * as schema from "../db/schema";
@@ -126,6 +126,17 @@ export const auth = betterAuth({
           return false;
         }
       },
+    }),
+
+    // Lets the native app (apps/ai-broker-native-wrapper) hand a session
+    // established in the system browser (Google OAuth refuses embedded
+    // webviews) to its own webview: /auth/native-complete mints a short-lived,
+    // single-use token from the browser session, the app's aibroker:// deep
+    // link carries it back, and /auth/native-callback spends it to set the
+    // session cookie there. See apps/ai-broker-native-wrapper/docs/OAUTH.md.
+    oneTimeToken({
+      expiresIn: 5,
+      storeToken: "hashed",
     }),
 
     stripe({

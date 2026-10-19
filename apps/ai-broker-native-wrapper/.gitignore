@@ -1,0 +1,24 @@
+# Rust / Tauri build output
+src-tauri/target/
+src-tauri/gen/
+gen/
+
+# Mobile signing material — never commit keystores/certs/provisioning profiles
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+*.p8
+
+# OS junk
+.DS_Store
+
+# An optional offline build, if a profile ships one
+dist/offline/
+
+# Local install of this non-workspace package (lockfiles are not committed in this repo)
+node_modules/
+bun.lock
+
+# Docker build output (scripts/build-docker.sh)
+dist-artifacts/

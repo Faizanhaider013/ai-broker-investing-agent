@@ -137,7 +137,7 @@ Keep responses concise, practical, and well-formatted using markdown. Focus on a
         for (const toolCall of response.toolCalls) {
           try {
             // Execute the tool
-            const toolResult = await executeTool(toolCall.name, toolCall.arguments)
+            const toolResult = await executeTool(toolCall.name, toolCall.arguments, availableTools)
             toolResults.push(`**${toolCall.name}**:\n${toolResult}`)
           } catch (error: any) {
             toolResults.push(`**${toolCall.name}** error: ${error.message}`)

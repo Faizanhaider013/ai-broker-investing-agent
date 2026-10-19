@@ -1,0 +1,20 @@
+{
+  "$schema": "../gen/schemas/remote-schema.json",
+  "identifier": "remote",
+  "description": "Scoped IPC access for the wrapped site itself (profiles/<name>.json's trustedOrigins): opening the system browser for the Google OAuth handoff, and reading the host description its About system panel renders. Nothing else is exposed to remote content.",
+  "windows": [
+    "main"
+  ],
+  "remote": {
+    "urls": [
+      "https://autoinvestment.broker/*",
+      "https://*.autoinvestment.broker/*"
+    ]
+  },
+  "permissions": [
+    "opener:allow-open-url",
+    "allow-system-info",
+    "allow-quick-launch",
+    "allow-app-source"
+  ]
+}

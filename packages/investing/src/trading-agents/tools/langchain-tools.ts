@@ -261,8 +261,12 @@ export function toolsToOpenAIFunctions(tools: Tool[]) {
 /**
  * Execute a tool by name with given input
  */
-export async function executeTool(toolName: string, input: any): Promise<string> {
-  const tool = tradingTools.find(t => t.name === toolName)
+export async function executeTool(
+  toolName: string,
+  input: any,
+  tools: Tool[] = tradingTools
+): Promise<string> {
+  const tool = tools.find(t => t.name === toolName)
 
   if (!tool) {
     throw new Error(`Tool not found: ${toolName}`)
@@ -311,7 +315,7 @@ export class AgentExecutor {
 
       // Execute tool calls
       for (const toolCall of response.toolCalls) {
-        const toolResult = await executeTool(toolCall.name, toolCall.arguments)
+        const toolResult = await executeTool(toolCall.name, toolCall.arguments, this.tools)
 
         conversationHistory.push({
           role: 'assistant',

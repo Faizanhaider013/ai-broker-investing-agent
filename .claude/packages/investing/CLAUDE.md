@@ -58,7 +58,7 @@ bundle. **Do not import `cloudflare:workers` here.**
 | `leaders/` | ZuluTrade and NVSTly copy-trading leaderboards |
 | `live-data/` | Dukascopy feed + symbol table. Never call dukascopy-node's `getHistoricalRates`/`getRealTimeRates` directly: their config check compiles with `new Function`, which Cloudflare Workers reject. `dukascopy-client.ts` rebuilds that pipeline from the library's exported pieces. |
 | `correlate/` | Time-series correlation / XGBoost prediction statistics |
-| `prediction/` | Market sync, analysis, API, and its own D1 tables |
+| `prediction/` | Market sync, analysis, API, and its own D1 tables. Syncs upsert and never clear `polymarket_markets` (admin publish state lives in `listing_controls`); `refillMarkets` is the admin refill. Parse `clobTokenIds` with `utils/token-ids.ts` — it is a JSON string, not an array. The data-api leaderboard wants upper-case enums and ≤50 rows a page; go through `buildLeaderboardUrl`/`fetchLeaderboardPages`. Use global `fetch`, not `node-fetch` (Workers). |
 | `prediction-markets/` | Bookmaker / event-analysis / mapper agents, Polymarket order bots, venue clients, arbitrage. MIT — keep its `LICENSE` file. |
 | `stocks/`, `stock-names-data/` | Instruments, name resolution, and `strategies/` — deterministic, signal-only strategies over OHLCV bars (e.g. `evaluateEmaCrossover`, a port of the Pine "Long Only EMA" strategy) that return `TradeSignal[]` and never place orders |
 | `qwksearch/`, `trending-topics/` | News/web research feeding the news analyst |
