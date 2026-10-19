@@ -25,6 +25,14 @@
     "./components": {
       "types": "./dist/components/index.d.ts",
       "import": "./dist/components/index.js"
+    },
+    "./privy": {
+      "types": "./dist/privy/index.d.ts",
+      "import": "./dist/privy/index.js"
+    },
+    "./send": {
+      "types": "./dist/send.d.ts",
+      "import": "./dist/send.js"
     }
   },
   "files": [
@@ -41,6 +49,7 @@
     "clean": "rm -rf dist coverage .turbo node_modules"
   },
   "dependencies": {
+    "@privy-io/react-auth": "^3.50.0",
     "viem": "^2.43.5"
   },
   "peerDependencies": {

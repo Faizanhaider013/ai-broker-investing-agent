@@ -9,7 +9,7 @@ import { consumeSurveyPrompt } from "@/lib/survey/prompt"
 
 declare global {
   interface Window {
-    ethereum: any
+    ethereum?: any
   }
 }
 

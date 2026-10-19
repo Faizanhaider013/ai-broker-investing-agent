@@ -125,6 +125,8 @@ export default defineConfig({
       investing: path.join(investingSrc, "index.ts"),
       // Subpaths before the bare name: the first matching alias wins.
       "crypto-wallet/components": path.join(cryptoWalletSrc, "components/index.ts"),
+      "crypto-wallet/privy": path.join(cryptoWalletSrc, "privy/index.ts"),
+      "crypto-wallet/send": path.join(cryptoWalletSrc, "send.ts"),
       "crypto-wallet/wallet": path.join(cryptoWalletSrc, "wallet.ts"),
       "crypto-wallet": path.join(cryptoWalletSrc, "index.ts"),
       "entities/escape": entitiesEscape,

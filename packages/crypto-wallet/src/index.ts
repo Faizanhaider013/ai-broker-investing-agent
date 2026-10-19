@@ -16,3 +16,5 @@ export {
 } from './langchain-tools';
 export { EthereumMCPClient, getEthereumMCPClient, resetEthereumMCPClient } from './mcp-client';
 export { toolConfigs, toolConfigMap } from './mcp/tools-config.js';
+export { validateSend, parseChainId } from './send';
+export type { SendRequest, SendValidation } from './send';

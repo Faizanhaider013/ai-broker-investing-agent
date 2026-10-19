@@ -34,6 +34,12 @@
       "crypto-wallet/components": [
         "../../packages/crypto-wallet/src/components/index.ts"
       ],
+      "crypto-wallet/privy": [
+        "../../packages/crypto-wallet/src/privy/index.ts"
+      ],
+      "crypto-wallet/send": [
+        "../../packages/crypto-wallet/src/send.ts"
+      ],
       "crypto-wallet/wallet": [
         "../../packages/crypto-wallet/src/wallet.ts"
       ],

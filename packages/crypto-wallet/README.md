@@ -5,9 +5,16 @@ packaged for the AI Broker monorepo: its wallet UI component, its Ethereum API
 (wallet-aware LangChain tools, generic Ethereum query tools, the Ethereum MCP
 client) and all of its documentation.
 
-In the app it powers the **Crypto Wallet** sidebar page (`/wallet`) and the
-`GET /api/wallet/info` route. Wallets are linked through the app's existing
-Sign-In with Ethereum (better-auth `siwe` plugin, table `wallet_addresses`).
+In the app it powers the **Crypto Wallet** sidebar page (`/wallet`), which
+offers two wallets:
+
+- **In-app wallet** ([Privy](https://docs.privy.io) embedded wallet): log in
+  with email or a social account, get an Ethereum wallet created for you, see
+  its address and balance, send the native asset, and export the key. Needs
+  `PRIVY_APP_ID` (read at request time through `GET /api/wallet/config`).
+- **Your own wallet**: MetaMask or any injected wallet, linked through the
+  app's existing Sign-In with Ethereum (better-auth `siwe` plugin, table
+  `wallet_addresses`) and listed by `GET /api/wallet/info`.
 
 ## Entry points
 
@@ -15,7 +22,9 @@ Sign-In with Ethereum (better-auth `siwe` plugin, table `wallet_addresses`).
 | --- | --- | --- |
 | `crypto-wallet` | Everything below plus `getWalletAwareTools`, `generateEthereumTools` / `generateCommonEthereumTools` / `generateWalletTools` / `generateBlockchainQueryTools`, `EthereumMCPClient`, `toolConfigs` | Server (viem, LangChain) |
 | `crypto-wallet/wallet` | `summarizeWallets`, `chainName`, `shortenAddress`, `explorerAddressUrl`, `CHAIN_NAMES`, `WalletInfoData` | Anywhere, no dependencies |
+| `crypto-wallet/send` | `validateSend` (form input to a wei transfer), `parseChainId` | Anywhere (viem utils only) |
 | `crypto-wallet/components` | `<WalletInfo variant="card" \| "floating" />` | Client (`'use client'`) |
+| `crypto-wallet/privy` | `<PrivyWalletProvider appId>`, `<EmbeddedWallet />` | Client; pulls in `@privy-io/react-auth`, so load it lazily |
 
 `ai-broker-web` consumes the package from TypeScript source (aliases in its
 `vite.config.ts`, `vitest.config.ts` and `tsconfig.json`), like `investing`, so
@@ -39,6 +48,7 @@ const tools = getWalletAwareTools({ address, chainId }) // LangChain DynamicStru
 | Path | Origin in crypto-wallet-ai |
 | --- | --- |
 | `src/components/WalletInfo.tsx` | `src/components/wallet/WalletInfo.tsx` (adds the inline `card` variant and a `fallback`) |
+| `src/privy/`, `src/send.ts` | New: the Privy embedded wallet (not in crypto-wallet-ai) |
 | `src/wallet.ts` | Logic of `src/app/api/wallet/info/route.ts`, made framework-free |
 | `src/server-tools.ts` | `src/lib/ethereum-api/server-tools.ts` |
 | `src/langchain-tools.ts` | `src/lib/ethereum-api/langchain-tools.ts` |
