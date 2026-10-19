@@ -120,7 +120,16 @@ export class YahooFinanceWrapper {
    */
   async getQuote(symbol: string, options?: any) {
     try {
-      const quote = await yf.quoteCombine(symbol, options);
+      // Not quoteCombine(): it batches calls through one module-level debounce
+      // timer, so a second request's call clears the first request's timer and
+      // the combined fetch runs in whichever request came last. On Workers a
+      // request's timers die with it, leaving the others to hang until our 10s
+      // timeout ("All sources failed"). Its strict result validation also
+      // rejected every symbol in the batch when Yahoo's payload drifted.
+      const quote = await yf.quote(symbol, options, { validateResult: false });
+      if (!quote) {
+        return { success: false, error: `No quote returned for ${symbol}` };
+      }
       return {
         success: true,
         data: quote,
@@ -140,8 +149,10 @@ export class YahooFinanceWrapper {
    */
   async getQuotes(symbols: string[]) {
     try {
-      const quotes = await Promise.all(
-        symbols.map((symbol) => yf.quoteCombine(symbol)),
+      const quotes = await yf.quote(
+        symbols,
+        { return: "array" },
+        { validateResult: false },
       );
       return {
         success: true,
@@ -152,6 +163,69 @@ export class YahooFinanceWrapper {
       return {
         success: false,
         error: error.message || "Failed to fetch quotes",
+      };
+    }
+  }
+
+  /**
+   * Build a quote from the chart endpoint.
+   *
+   * A fallback for when `quote()` fails: the chart endpoint needs no
+   * cookie/crumb handshake, which is the part of `quote()` Yahoo most often
+   * refuses for datacenter IPs. Returns quote-shaped fields so callers can
+   * normalize it the same way as a `quote()` result.
+   */
+  async getChartQuote(symbol: string) {
+    try {
+      const chart: any = await yf.chart(
+        symbol,
+        {
+          period1: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+          interval: "1d",
+        },
+        { validateResult: false },
+      );
+
+      const meta = chart?.meta;
+      const price = toFiniteNumber(meta?.regularMarketPrice);
+      if (!meta || price === null || price <= 0) {
+        return { success: false, error: `No chart price returned for ${symbol}` };
+      }
+
+      // The close of the session before the latest bar. `chartPreviousClose`
+      // is the close before the whole range, not the previous day.
+      const rows = normalizeChartQuotes(chart.quotes);
+      const previousClose =
+        toFiniteNumber(meta.previousClose) ??
+        (rows.length >= 2 ? rows[rows.length - 2].close : null);
+      const change = previousClose !== null ? price - previousClose : null;
+
+      return {
+        success: true,
+        data: {
+          symbol: meta.symbol ?? symbol,
+          regularMarketPrice: price,
+          regularMarketChange: change,
+          regularMarketChangePercent:
+            change !== null && previousClose ? (change / previousClose) * 100 : null,
+          regularMarketOpen: rows.length > 0 ? rows[rows.length - 1].open : null,
+          regularMarketDayHigh: toFiniteNumber(meta.regularMarketDayHigh),
+          regularMarketDayLow: toFiniteNumber(meta.regularMarketDayLow),
+          regularMarketPreviousClose: previousClose,
+          volume: toFiniteNumber(meta.regularMarketVolume),
+          currency: meta.currency ?? null,
+          longName: meta.longName ?? null,
+          shortName: meta.shortName ?? null,
+          exchange: meta.exchangeName ?? null,
+          fullExchangeName: meta.fullExchangeName ?? null,
+          regularMarketTime: meta.regularMarketTime ?? null,
+        },
+      };
+    } catch (error: any) {
+      console.error(`Yahoo Finance chart quote error for ${symbol}:`, error?.message || error);
+      return {
+        success: false,
+        error: error?.message || "Failed to fetch chart quote",
       };
     }
   }
