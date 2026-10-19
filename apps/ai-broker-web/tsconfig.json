@@ -31,6 +31,15 @@
       "investing/*": [
         "../../packages/investing/src/*"
       ],
+      "crypto-wallet/components": [
+        "../../packages/crypto-wallet/src/components/index.ts"
+      ],
+      "crypto-wallet/wallet": [
+        "../../packages/crypto-wallet/src/wallet.ts"
+      ],
+      "crypto-wallet": [
+        "../../packages/crypto-wallet/src/index.ts"
+      ],
       "fumadocs-mdx:collections/server": [
         "./.source/server.ts"
       ]

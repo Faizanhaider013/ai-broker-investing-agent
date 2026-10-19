@@ -5,7 +5,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useSearchParams } from 'next/navigation'
-import { Search } from "lucide-react"
+import { Search, Wallet } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -58,6 +58,7 @@ const navigationGroups = [
     title: "Risk & Portfolio",
     items: [
       { name: "Portfolio Management", href: "/portfolio", icon: IndicatorsIcon },
+      { name: "Crypto Wallet", href: "/wallet", icon: Wallet },
     ],
   },
 ]
