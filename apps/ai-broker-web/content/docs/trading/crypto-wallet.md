@@ -1,6 +1,6 @@
 ---
 title: Crypto Wallet
-description: "Link an Ethereum wallet to your account and see it from the sidebar."
+description: "Use the in-app wallet or link MetaMask, and send ETH from the sidebar."
 icon: Wallet
 ---
 
