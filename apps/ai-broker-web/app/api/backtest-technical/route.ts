@@ -5,6 +5,8 @@ import {
   TECHNICAL_STRATEGY_ID_BY_NAME,
   TECHNICAL_STRATEGY_NAME_BY_ID,
 } from '@/lib/technical-strategies'
+import { maxDrawdownPercent } from '@/lib/backtest-metrics'
+
 interface BacktestRequest {
   symbol: string
   startDate: string
