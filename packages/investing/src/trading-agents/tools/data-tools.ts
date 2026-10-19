@@ -171,6 +171,14 @@ function calculateSMA(data: number[], period: number): number[] {
 }
 
 function calculateEMA(data: number[], period: number): number[] {
+  if (!Number.isInteger(period) || period <= 0) {
+    throw new Error("period must be a positive integer");
+  }
+
+  if (data.length < period) {
+    return Array(data.length).fill(NaN);
+  }
+
   const result: number[] = [];
   const multiplier = 2 / (period + 1);
 

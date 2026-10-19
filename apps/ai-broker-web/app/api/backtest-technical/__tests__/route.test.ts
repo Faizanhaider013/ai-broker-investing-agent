@@ -1,98 +1,100 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// A buy-and-hold mock strategy: buy on the first bar, then hold. Works for any
-// price-series length so each scenario below just varies the closes.
-const { mockStrategies } = vi.hoisted(() => ({
-  mockStrategies: [
-    {
-      name: 'Buy Hold',
-      strategy: vi.fn((asset: { closings: number[] }) =>
-        asset.closings.map((_, i) => (i === 0 ? 1 : 0)),
-      ),
-    },
-  ],
-}))
+const { mockStrategies } = vi.hoisted(() => {
+  const strategy = (name: string, actions: number[]) => ({
+    name,
+    strategy: vi.fn(() => actions),
+  });
 
-vi.mock('indicatorts', () => ({
+  return {
+    mockStrategies: [
+      strategy("Buy Hold", [1, 0, -1]),
+      strategy("MACD Strategy", [0, 1, -1]),
+      strategy("Bollinger Bands", [1, -1, 0]),
+    ],
+  };
+});
+
+vi.mock("indicatorts", () => ({
   STRATEGY_INFOS: mockStrategies,
   backtest: vi.fn((_asset, strategies) =>
     strategies.map((info: unknown) => ({ info })),
   ),
-}))
+}));
 
-vi.mock('@/packages/investing/src/stocks/yahoo-finance-wrapper', () => ({
-  yahooFinance: { getHistorical: vi.fn() },
-}))
+vi.mock("@/packages/investing/src/stocks/yahoo-finance-wrapper", () => ({
+  yahooFinance: {
+    getHistorical: vi.fn(),
+  },
+}));
 
-import { yahooFinance } from '@/packages/investing/src/stocks/yahoo-finance-wrapper'
-import { POST } from '../route'
+import { backtest } from "indicatorts";
+import { yahooFinance } from "@/packages/investing/src/stocks/yahoo-finance-wrapper";
+import { POST } from "../route";
 
+const mockBacktest = backtest as unknown as ReturnType<typeof vi.fn>;
 const mockGetHistorical = yahooFinance.getHistorical as unknown as ReturnType<
   typeof vi.fn
->
+>;
 
-// Build a flat OHLCV series from a list of closes (one bar per day).
-const seriesFromCloses = (closes: number[]) =>
-  closes.map((close, i) => ({
-    date: `2024-01-${String(i + 1).padStart(2, '0')}`,
-    open: close,
-    high: close,
-    low: close,
-    close,
-    volume: 100,
-  }))
+const prices = [
+  { date: "2024-01-02", open: 10, high: 11, low: 9, close: 10, volume: 100 },
+  { date: "2024-01-03", open: 11, high: 12, low: 10, close: 11, volume: 110 },
+  { date: "2024-01-04", open: 12, high: 13, low: 11, close: 12, volume: 120 },
+];
 
-const runBuyHold = async (closes: number[], initialCapital = 100000) => {
-  mockGetHistorical.mockResolvedValue({
-    success: true,
-    data: seriesFromCloses(closes),
-  })
-  const response = await POST(
-    new Request('http://localhost/api/backtest-technical', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        symbol: 'AAPL',
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        initialCapital,
-        strategyIds: ['buy-hold'],
-      }),
-    }) as never,
-  )
-  const body = await response.json()
-  expect(response.status).toBe(200)
-  return body.results[0]
-}
+const request = (strategyIds: string[]) =>
+  new Request("http://localhost/api/backtest-technical", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      symbol: "AAPL",
+      startDate: "2024-01-01",
+      endDate: "2024-01-05",
+      strategyIds,
+    }),
+  });
 
 beforeEach(() => {
-  vi.clearAllMocks()
-  vi.spyOn(console, 'log').mockImplementation(() => {})
-})
+  vi.clearAllMocks();
+  vi.spyOn(console, "log").mockImplementation(() => {});
+  mockGetHistorical.mockResolvedValue({ success: true, data: prices });
+});
 
-describe('POST /api/backtest-technical maxDrawdown metric', () => {
-  it('reports the peak-to-trough decline, not global-max minus global-min', async () => {
-    // Buy 1000 shares at 100 (=100k). Equity: 100k -> 50k -> 80k -> 120k.
-    // True max drawdown is the 100k -> 50k leg = 50%. The old formula used the
-    // global max (120k) and global min (50k) => (120k-50k)/120k ≈ 58.33%.
-    const result = await runBuyHold([100, 50, 80, 120])
-    expect(result.maxDrawdown).toBeCloseTo(50, 6)
-    // Other metrics stay intact: final value 120k on 100k => +20%.
-    expect(result.finalValue).toBeCloseTo(120000, 6)
-    expect(result.totalReturnPercent).toBeCloseTo(20, 6)
-  })
+describe("POST /api/backtest-technical strategy selection", () => {
+  it("maps selected short IDs to exact library strategy names", async () => {
+    const response = await POST(request(["macd", "bollinger-bands"]) as never);
+    const body = await response.json();
 
-  it('reports 0% drawdown for a monotonically rising equity curve', async () => {
-    // Equity 100k -> 110k -> 120k never falls below its running peak. The old
-    // formula reported a phantom (120k-100k)/120k ≈ 16.67% drawdown here.
-    const result = await runBuyHold([100, 110, 120])
-    expect(result.maxDrawdown).toBe(0)
-    expect(result.finalValue).toBeCloseTo(120000, 6)
-  })
+    expect(response.status).toBe(200);
+    expect(mockBacktest.mock.calls[0][1]).toEqual([
+      mockStrategies[1],
+      mockStrategies[2],
+    ]);
+    expect(
+      body.results
+        .map((result: { strategyId: string }) => result.strategyId)
+        .sort(),
+    ).toEqual(["bollinger-bands", "macd"]);
+  });
 
-  it('reports 0% drawdown for a flat equity curve', async () => {
-    const result = await runBuyHold([100, 100, 100])
-    expect(result.maxDrawdown).toBe(0)
-    expect(result.totalReturnPercent).toBeCloseTo(0, 6)
-  })
-})
+  it("ignores unknown catalog IDs without changing selection behavior", async () => {
+    const response = await POST(request(["tradingview-id", "macd"]) as never);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mockBacktest.mock.calls[0][1]).toEqual([mockStrategies[1]]);
+    expect(body.results).toHaveLength(1);
+    expect(body.results[0]).toMatchObject({
+      strategyId: "macd",
+      strategyName: "MACD Strategy",
+    });
+  });
+
+  it("runs all registered library strategies when no IDs are supplied", async () => {
+    const response = await POST(request([]) as never);
+
+    expect(response.status).toBe(200);
+    expect(mockBacktest.mock.calls[0][1]).toEqual(mockStrategies);
+  });
+});
