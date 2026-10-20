@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import grab from 'grab-url';
+import { track } from '@amplitude/unified';
 import { useSession } from "@/lib/auth/client"
 import { dismissSurvey } from "@/lib/survey/prompt"
 
@@ -484,15 +485,7 @@ export default function InvestorSurvey() {
             </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
-
-    <div className="flex justify-center pb-12">
-      <Button size="lg" onClick={handleSubmit} className="px-12 shadow-lg" disabled={isSubmitting || submitSuccess}>
-        {isSubmitting ? "Submitting..." : submitSuccess ? "Submitted!" : "Submit Survey"}
-      </Button>
-    </div>
-  </main>
+      </main>
 
       {/* Footer */}
       <footer className="backdrop-blur-md bg-card/70 border-t border-border py-8">

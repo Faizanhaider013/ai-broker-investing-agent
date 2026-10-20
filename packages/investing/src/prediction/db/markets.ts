@@ -1,6 +1,6 @@
 import { db } from "../../db";
-import { polymarketMarkets } from "../../db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { listingControls, polymarketMarkets } from "../../db/schema";
+import { eq, desc, and, sql } from "drizzle-orm";
 import {
   categorizeMarket,
   categorizeMarketSubcategory,
@@ -129,6 +129,19 @@ export async function saveMarkets(marketsData: any[]) {
   }
 }
 
+/** `listing_controls.kind` for a Polymarket market. */
+export const PM_MARKET_LISTING_KIND = "pm-market";
+
+/**
+ * Condition matching markets an admin has not unpublished. Markets with no
+ * `listing_controls` row are published — new markets from a sync show up
+ * without anyone having to approve them — so this is a NOT EXISTS over the
+ * unpublished rows rather than a join over published ones.
+ */
+export function publishedMarketCondition() {
+  return sql`not exists (select 1 from ${listingControls} where ${listingControls.kind} = ${PM_MARKET_LISTING_KIND} and ${listingControls.itemId} = ${polymarketMarkets.id} and ${listingControls.published} = 0)`;
+}
+
 /**
  * Retrieves markets from the database with filtering and sorting options.
  * @param options - Query configuration options
@@ -136,6 +149,7 @@ export async function saveMarkets(marketsData: any[]) {
  * @param options.sortBy - Sort field: "volume24hr", "volumeTotal", or "createdAt" (default: "volume24hr")
  * @param options.category - Optional category tag to filter by
  * @param options.activeOnly - Only include active markets (default: true)
+ * @param options.includeUnpublished - Also return markets an admin unpublished (default: false)
  * @returns Array of market records matching the criteria
  */
 export async function getMarkets(
@@ -145,6 +159,7 @@ export async function getMarkets(
     sortBy?: "volume24hr" | "volumeTotal" | "createdAt";
     category?: string;
     activeOnly?: boolean;
+    includeUnpublished?: boolean;
   } = {},
 ) {
   const {
@@ -153,6 +168,7 @@ export async function getMarkets(
     sortBy = "volume24hr",
     category,
     activeOnly = true,
+    includeUnpublished = false,
   } = options;
 
   let query = db.select().from(polymarketMarkets);
@@ -164,6 +180,9 @@ export async function getMarkets(
   }
   if (category && category !== "Overall" && category !== "all") {
     conditions.push(eq(polymarketMarkets.category, category));
+  }
+  if (!includeUnpublished) {
+    conditions.push(publishedMarketCondition());
   }
 
   // Apply where conditions
@@ -197,6 +216,7 @@ export async function getMarkets(
  * @param options.sortBy - Sort field: "volume24hr", "volumeTotal", or "createdAt" (default: "volume24hr")
  * @param options.category - Optional category tag to filter by
  * @param options.activeOnly - Only include active markets (default: true)
+ * @param options.includeUnpublished - Also return markets an admin unpublished (default: false)
  * @returns Array of market records matching the search term
  */
 export async function searchMarketsInDB(
@@ -207,9 +227,17 @@ export async function searchMarketsInDB(
     sortBy?: "volume24hr" | "volumeTotal" | "createdAt";
     category?: string;
     activeOnly?: boolean;
+    includeUnpublished?: boolean;
   } = {},
 ) {
-  const { limit = 50, offset = 0, sortBy = "volume24hr", category, activeOnly = true } = options;
+  const {
+    limit = 50,
+    offset = 0,
+    sortBy = "volume24hr",
+    category,
+    activeOnly = true,
+    includeUnpublished = false,
+  } = options;
 
   if (!searchTerm || searchTerm.trim() === "") {
     return [];
@@ -224,6 +252,9 @@ export async function searchMarketsInDB(
   }
   if (category && category !== "Overall" && category !== "all") {
     conditions.push(eq(polymarketMarkets.category, category));
+  }
+  if (!includeUnpublished) {
+    conditions.push(publishedMarketCondition());
   }
 
   // Apply where conditions
@@ -261,7 +292,7 @@ export async function getMarketsByCategory() {
   const markets = await db
     .select()
     .from(polymarketMarkets)
-    .where(eq(polymarketMarkets.active, true))
+    .where(and(eq(polymarketMarkets.active, true), publishedMarketCondition()))
     .orderBy(desc(polymarketMarkets.volume24hr))
     .limit(100);
 

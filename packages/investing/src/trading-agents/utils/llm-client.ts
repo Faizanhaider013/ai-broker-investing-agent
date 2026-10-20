@@ -7,14 +7,36 @@ import { Message, TradingConfig } from '../types'
 
 export interface LLMResponse {
   content: string
-  toolCalls?: Array<{
-    name: string
-    arguments: Record<string, any>
-  }>
+  toolCalls?: LLMToolCall[]
+}
+
+export interface LLMToolCall {
+  name: string
+  arguments: Record<string, any>
+  /** Provider-generated identifier used to correlate a tool result. */
+  id?: string
+  /** OpenAI-compatible providers currently return "function". */
+  type?: 'function'
+  /** Exact JSON argument text returned by the provider. */
+  rawArguments?: string
 }
 
 export interface LLMClient {
   invoke(input: string | Message[]): Promise<LLMResponse>
+}
+
+function parseToolCalls(toolCalls: any[] | undefined): LLMToolCall[] | undefined {
+  return toolCalls?.map((toolCall: any) => {
+    const rawArguments = toolCall.function.arguments
+
+    return {
+      id: toolCall.id,
+      type: toolCall.type,
+      name: toolCall.function.name,
+      arguments: JSON.parse(rawArguments),
+      rawArguments
+    }
+  })
 }
 
 export class UnifiedLLMClient implements LLMClient {
@@ -91,10 +113,7 @@ export class UnifiedLLMClient implements LLMClient {
     const data = await response.json()
     return {
       content: data.choices[0].message.content,
-      toolCalls: data.choices[0].message.tool_calls?.map((tc: any) => ({
-        name: tc.function.name,
-        arguments: JSON.parse(tc.function.arguments)
-      }))
+      toolCalls: parseToolCalls(data.choices[0].message.tool_calls)
     }
   }
 
@@ -125,10 +144,7 @@ export class UnifiedLLMClient implements LLMClient {
     const data = await response.json()
     return {
       content: data.choices[0].message.content,
-      toolCalls: data.choices[0].message.tool_calls?.map((tc: any) => ({
-        name: tc.function.name,
-        arguments: JSON.parse(tc.function.arguments)
-      }))
+      toolCalls: parseToolCalls(data.choices[0].message.tool_calls)
     }
   }
 
@@ -218,10 +234,7 @@ export class UnifiedLLMClient implements LLMClient {
     const data = await response.json()
     return {
       content: data.choices[0].message.content,
-      toolCalls: data.choices[0].message.tool_calls?.map((tc: any) => ({
-        name: tc.function.name,
-        arguments: JSON.parse(tc.function.arguments)
-      }))
+      toolCalls: parseToolCalls(data.choices[0].message.tool_calls)
     }
   }
 }

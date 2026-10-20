@@ -44,6 +44,10 @@ export const env = createEnv({
         OPENAI_API_KEY: z.string().optional(),
         GOOGLE_API_KEY: z.string().optional(),
 
+        // QwkSearch deployment the Research Agent's "Sign in with QwkSearch"
+        // talks to (lib/qwksearch); defaults to https://qwksearch.com.
+        QWKSEARCH_ORIGIN: z.string().optional(),
+
         NODE_ENV: z
             .enum(['development', 'test', 'production'])
             .default('development'),
@@ -70,6 +74,7 @@ export const env = createEnv({
         GROQ_API_KEY: process.env.GROQ_API_KEY,
         OPENAI_API_KEY: process.env.OPENAI_API_KEY,
         GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+        QWKSEARCH_ORIGIN: process.env.QWKSEARCH_ORIGIN,
         NODE_ENV: process.env.NODE_ENV,
         NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
         NEXT_PUBLIC_APP_DOMAIN: process.env.NEXT_PUBLIC_APP_DOMAIN,

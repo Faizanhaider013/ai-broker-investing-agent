@@ -78,6 +78,36 @@ export interface QuotesServiceResponse {
 }
 
 /**
+ * Map a Yahoo quote-shaped result onto a NormalizedQuote, or null when it
+ * carries no usable price. A $0 price is not a quote: accepting one would be
+ * cached and served to every later reader.
+ */
+function normalizeYahooQuote(symbol: string, result: any): NormalizedQuote | null {
+  if (!result?.success || !result.data) return null;
+  const data = result.data;
+  const price = Number(data.regularMarketPrice ?? data.currentPrice ?? 0);
+  if (!Number.isFinite(price) || price <= 0) return null;
+
+  return {
+    symbol,
+    price,
+    change: data.regularMarketChange || null,
+    changePercent: data.regularMarketChangePercent || null,
+    open: data.regularMarketOpen || data.open || null,
+    high: data.regularMarketDayHigh || data.dayHigh || null,
+    low: data.regularMarketDayLow || data.dayLow || null,
+    previousClose: data.regularMarketPreviousClose || data.previousClose || null,
+    volume: data.volume || null,
+    marketCap: data.marketCap || null,
+    currency: data.currency || "USD",
+    name: data.longName || data.shortName || symbol,
+    exchange: data.exchange || data.fullExchangeName || null,
+    timestamp: data.regularMarketTime ? new Date(data.regularMarketTime) : new Date(),
+    source: "yfinance",
+  };
+}
+
+/**
  * Unified Quote Service Class
  */
 export class UnifiedQuoteService {
@@ -161,49 +191,37 @@ export class UnifiedQuoteService {
       console.log(`[UnifiedQuote] ✗ alpaca failed for ${symbol}: ${error.message}`);
     }
 
-    // Try yfinance as fallback
-    try {
-      console.log(`[UnifiedQuote] Trying yfinance for ${symbol}...`);
-      const yfinanceResult = await withTimeout(
-        yahooFinance.getQuote(symbol),
-        10000,
-        `yfinance timeout after 10s for ${symbol}`
-      );
+    // Try yfinance as fallback: the quote endpoint first, then the chart
+    // endpoint, which skips Yahoo's cookie/crumb handshake and so still works
+    // when the quote endpoint is refused.
+    const yahooSources = [
+      { label: "yfinance", fetch: () => yahooFinance.getQuote(symbol) },
+      { label: "yfinance chart", fetch: () => yahooFinance.getChartQuote(symbol) },
+    ];
+    for (const { label, fetch } of yahooSources) {
+      try {
+        console.log(`[UnifiedQuote] Trying ${label} for ${symbol}...`);
+        const yfinanceResult: any = await withTimeout(
+          fetch(),
+          10000,
+          `${label} timeout after 10s for ${symbol}`
+        );
 
-      const yfPrice = Number(
-        (yfinanceResult.data as any)?.regularMarketPrice ??
-          (yfinanceResult.data as any)?.currentPrice ??
-          0,
-      );
-      if (yfinanceResult.success && yfinanceResult.data && Number.isFinite(yfPrice) && yfPrice > 0) {
-        const data = yfinanceResult.data as any;
-        const normalized: NormalizedQuote = {
-          symbol,
-          price: yfPrice,
-          change: data.regularMarketChange || null,
-          changePercent: data.regularMarketChangePercent || null,
-          open: data.regularMarketOpen || data.open || null,
-          high: data.regularMarketDayHigh || data.dayHigh || null,
-          low: data.regularMarketDayLow || data.dayLow || null,
-          previousClose: data.regularMarketPreviousClose || data.previousClose || null,
-          volume: data.volume || null,
-          marketCap: data.marketCap || null,
-          currency: data.currency || "USD",
-          name: data.longName || data.shortName || symbol,
-          exchange: data.exchange || data.fullExchangeName || null,
-          timestamp: data.regularMarketTime ? new Date(data.regularMarketTime) : new Date(),
-          source: "yfinance",
-        };
+        const normalized = normalizeYahooQuote(symbol, yfinanceResult);
+        if (normalized) {
+          console.log(`[UnifiedQuote] ✓ ${label} succeeded for ${symbol}`);
 
-        console.log(`[UnifiedQuote] ✓ yfinance succeeded for ${symbol}`);
+          // Save to cache
+          await quoteCacheService.saveQuoteToCache(normalized);
 
-        // Save to cache
-        await quoteCacheService.saveQuoteToCache(normalized);
-
-        return { success: true, data: normalized };
+          return { success: true, data: normalized };
+        }
+        console.log(
+          `[UnifiedQuote] ✗ ${label} returned no usable price for ${symbol}${yfinanceResult?.error ? `: ${yfinanceResult.error}` : ""}`
+        );
+      } catch (error: any) {
+        console.log(`[UnifiedQuote] ✗ ${label} failed for ${symbol}: ${error.message}`);
       }
-    } catch (error: any) {
-      console.log(`[UnifiedQuote] ✗ yfinance failed for ${symbol}: ${error.message}`);
     }
 
     console.error(`[UnifiedQuote] All sources failed for ${symbol}`);

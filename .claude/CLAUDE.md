@@ -45,9 +45,11 @@ Cloudflare Workers at [autoinvestment.broker](https://autoinvestment.broker).
 | Trading agents, signals, market data, brokers | `packages/investing` |
 | Prediction markets, cross-venue arbitrage | `packages/investing/src/prediction-markets` |
 | Congress / earnings / CFTC data providers | `packages/fin-data-api` |
+| Crypto wallet UI, Ethereum tools, wallet MCP client | `packages/crypto-wallet` |
 | The typed API client (generated) | `packages/ai-broker-api-client` |
 | The MCP server (generated) | `packages/mcp-server` |
 | Routes, `/api` handlers, auth, D1 schema, crons | `apps/ai-broker-web` |
+| The native desktop/mobile app (Tauri shell around the site) | `apps/ai-broker-native-wrapper` |
 | User-facing documentation | `apps/ai-broker-web/content/docs` |
 | Internal runbooks and decision records | `devdocs/` |
 
@@ -103,7 +105,9 @@ sits in one tree rather than beside the source.
 | Workspace | Note |
 | --- | --- |
 | `apps/ai-broker-web` | [.claude/apps/ai-broker-web/CLAUDE.md](.claude/apps/ai-broker-web/CLAUDE.md) |
+| `apps/ai-broker-native-wrapper` | [.claude/apps/ai-broker-native-wrapper/CLAUDE.md](.claude/apps/ai-broker-native-wrapper/CLAUDE.md) |
 | `packages/ai-broker-api-client` | [.claude/packages/ai-broker-api-client/CLAUDE.md](.claude/packages/ai-broker-api-client/CLAUDE.md) |
+| `packages/crypto-wallet` | [.claude/packages/crypto-wallet/CLAUDE.md](.claude/packages/crypto-wallet/CLAUDE.md) |
 | `packages/fin-data-api` | [.claude/packages/fin-data-api/CLAUDE.md](.claude/packages/fin-data-api/CLAUDE.md) |
 | `packages/investing` | [.claude/packages/investing/CLAUDE.md](.claude/packages/investing/CLAUDE.md) |
 | `packages/mcp-server` | [.claude/packages/mcp-server/CLAUDE.md](.claude/packages/mcp-server/CLAUDE.md) |

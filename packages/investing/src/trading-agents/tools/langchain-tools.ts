@@ -309,20 +309,56 @@ export class AgentExecutor {
         return response.content
       }
 
-      // Execute tool calls
-      for (const toolCall of response.toolCalls) {
-        const toolResult = await executeTool(toolCall.name, toolCall.arguments)
+      const usedToolCallIds = new Set<string>(
+        response.toolCalls
+          .map((toolCall: any) => toolCall.id)
+          .filter((id: any): id is string => typeof id === 'string')
+      )
+      const toolCalls = response.toolCalls.map((toolCall: any, index: number) => {
+        let id = toolCall.id
 
-        conversationHistory.push({
-          role: 'assistant',
-          content: response.content || '',
-          tool_calls: [toolCall]
-        })
+        if (id == null) {
+          const fallbackId = `call_${iteration}_${index}`
+          id = fallbackId
+          let collisionIndex = 1
+
+          while (usedToolCallIds.has(id)) {
+            id = `${fallbackId}_${collisionIndex}`
+            collisionIndex++
+          }
+
+          usedToolCallIds.add(id)
+        }
+
+        return {
+          ...toolCall,
+          id,
+          type: toolCall.type ?? 'function',
+          rawArguments: toolCall.rawArguments ?? JSON.stringify(toolCall.arguments)
+        }
+      })
+
+      conversationHistory.push({
+        role: 'assistant',
+        content: response.content || '',
+        tool_calls: toolCalls.map((toolCall: any) => ({
+          id: toolCall.id,
+          type: toolCall.type,
+          function: {
+            name: toolCall.name,
+            arguments: toolCall.rawArguments
+          }
+        }))
+      })
+
+      // Execute tool calls sequentially to preserve side-effect ordering
+      for (const toolCall of toolCalls) {
+        const toolResult = await executeTool(toolCall.name, toolCall.arguments)
 
         conversationHistory.push({
           role: 'tool',
           content: toolResult,
-          tool_call_id: toolCall.name
+          tool_call_id: toolCall.id
         })
       }
     }

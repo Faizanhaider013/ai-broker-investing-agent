@@ -1,0 +1,72 @@
+{
+  "name": "crypto-wallet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Crypto wallet for AI Broker: wallet UI components, wallet-aware Ethereum LangChain tools, an Ethereum MCP client, and the reference JSON-RPC/MCP servers (ported from vtempest/crypto-wallet-ai)",
+  "license": "rights.institute/prosper",
+  "author": "vtempest",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenSourceAGI/ai-broker-investing-agent.git",
+    "directory": "packages/crypto-wallet"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./wallet": {
+      "types": "./dist/wallet.d.ts",
+      "import": "./dist/wallet.js"
+    },
+    "./components": {
+      "types": "./dist/components/index.d.ts",
+      "import": "./dist/components/index.js"
+    },
+    "./privy": {
+      "types": "./dist/privy/index.d.ts",
+      "import": "./dist/privy/index.js"
+    },
+    "./send": {
+      "types": "./dist/send.d.ts",
+      "import": "./dist/send.js"
+    }
+  },
+  "files": [
+    "dist",
+    "docs",
+    "examples",
+    "server"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist coverage .turbo node_modules"
+  },
+  "dependencies": {
+    "@privy-io/react-auth": "^3.50.0",
+    "viem": "^2.43.5"
+  },
+  "peerDependencies": {
+    "@langchain/core": ">=1.1.0",
+    "lucide-react": ">=0.500.0",
+    "react": ">=18",
+    "zod": ">=4.0.0"
+  },
+  "devDependencies": {
+    "@langchain/core": "^1.1.22",
+    "@types/node": "^25.0.3",
+    "@types/react": "^19.2.7",
+    "@vitest/coverage-v8": "^3.2.7",
+    "lucide-react": "^0.563.0",
+    "react": "19.2.8",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7",
+    "zod": "4.3.6"
+  }
+}
