@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { maxDrawdownPercent } from '../backtest-metrics'
+import { equityCurveReturns, maxDrawdownPercent } from '../backtest-metrics'
 
 describe('maxDrawdownPercent', () => {
   it('returns 0 for a flat curve', () => {
@@ -44,5 +44,75 @@ describe('maxDrawdownPercent', () => {
     const nonPositive = maxDrawdownPercent([-10, -20, -5])
     expect(Number.isFinite(nonPositive)).toBe(true)
     expect(nonPositive).toBe(0)
+  })
+})
+
+describe('equityCurveReturns', () => {
+  it('computes consecutive fractional changes for a rising curve', () => {
+    const returns = equityCurveReturns([100, 110, 121])
+    expect(returns).toHaveLength(2)
+    expect(returns[0]).toBeCloseTo(0.1, 10)
+    expect(returns[1]).toBeCloseTo(0.1, 10)
+  })
+
+  it('computes negative returns for a falling curve', () => {
+    const returns = equityCurveReturns([100, 90, 81])
+    expect(returns).toHaveLength(2)
+    expect(returns[0]).toBeCloseTo(-0.1, 10)
+    expect(returns[1]).toBeCloseTo(-0.1, 10)
+  })
+
+  it('tracks a buy-and-hold mark-to-market series', () => {
+    // 10 shares held from $100 through $110 then $120 (capital 1000).
+    const returns = equityCurveReturns([1000, 1100, 1200])
+    expect(returns).toHaveLength(2)
+    expect(returns[0]).toBeCloseTo(0.1, 10)
+    expect(returns[1]).toBeCloseTo(1200 / 1100 - 1, 10)
+  })
+
+  it('does not fabricate a return when a trade leaves total equity unchanged', () => {
+    // A bar that only converts cash to shares (or back) at that bar's price does
+    // not move total equity, so its period return is exactly 0 — not a phantom
+    // move reconstructed from the new holdings at the prior bar's price.
+    const returns = equityCurveReturns([1000, 1000, 1200])
+    expect(returns).toHaveLength(2)
+    expect(returns[0]).toBe(0)
+    expect(returns[1]).toBeCloseTo(0.2, 10)
+  })
+
+  it('reflects the real move across both a buy bar and a later sell bar', () => {
+    // Equity: flat cash 900 -> buy at 100 (still 900) -> mark to 1080 -> sell at
+    // 120 (still 1080). Only the hold leg earned anything: [0, 0.2, 0].
+    const returns = equityCurveReturns([900, 900, 1080, 1080])
+    expect(returns).toHaveLength(3)
+    expect(returns[0]).toBeCloseTo(0, 10)
+    expect(returns[1]).toBeCloseTo(0.2, 10)
+    expect(returns[2]).toBeCloseTo(0, 10)
+  })
+
+  it('skips the undefined first period when starting equity is zero', () => {
+    // previous = 0 has no defined return; the next period is measured normally.
+    expect(equityCurveReturns([0, 50, 60])).toEqual([(60 - 50) / 50])
+  })
+
+  it('omits periods whose prior equity is non-positive rather than returning Infinity', () => {
+    const returns = equityCurveReturns([-10, 5, 10])
+    expect(returns.every((r) => Number.isFinite(r))).toBe(true)
+    // -10 -> 5 is undefined (prior <= 0); 5 -> 10 is +100%.
+    expect(returns).toEqual([1])
+  })
+
+  it('skips periods touching a non-finite value, keeping the series finite', () => {
+    const returns = equityCurveReturns([100, NaN, 200, 220])
+    expect(returns.every((r) => Number.isFinite(r))).toBe(true)
+    // 100->NaN skipped (current non-finite), NaN->200 skipped (prior non-finite),
+    // 200->220 = +10%.
+    expect(returns).toHaveLength(1)
+    expect(returns[0]).toBeCloseTo(0.1, 10)
+  })
+
+  it('returns an empty series for curves with fewer than two points', () => {
+    expect(equityCurveReturns([])).toEqual([])
+    expect(equityCurveReturns([100])).toEqual([])
   })
 })

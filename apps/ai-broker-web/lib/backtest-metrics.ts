@@ -52,3 +52,42 @@ export function maxDrawdownPercent(equityCurve: readonly number[]): number {
 
   return maxDrawdown
 }
+
+/**
+ * Per-period simple returns of an equity curve: for each consecutive pair of
+ * sampled portfolio values, the fractional change `(current - previous) /
+ * previous`.
+ *
+ * This is deliberately computed only from the equity curve itself. The return
+ * of a period is the mark-to-market change in the portfolio's sampled value and
+ * never reconstructs one period's value from another period's holdings — a buy
+ * or sell that merely converts cash to shares (or back) at that bar's price does
+ * not move total equity, so it does not create a phantom return.
+ *
+ * Zero-denominator guard: a return is only defined when the prior period's
+ * equity is a positive, finite number. Periods whose `previous` value is zero,
+ * negative, or non-finite are omitted rather than yielding `Infinity` or `NaN`
+ * (for example the first step of a curve that starts at `0`). Any non-finite
+ * `current` value is likewise skipped. This keeps every downstream statistic —
+ * mean, standard deviation, Sharpe ratio — finite. Returns are simple (not log)
+ * returns.
+ *
+ * @param equityCurve Portfolio value sampled once per period, in chronological
+ *   order.
+ * @returns One return per defined consecutive pair; `[]` for a curve with fewer
+ *   than two points, or when no pair has a positive, finite prior value.
+ */
+export function equityCurveReturns(equityCurve: readonly number[]): number[] {
+  const returns: number[] = []
+
+  for (let i = 1; i < equityCurve.length; i++) {
+    const previous = equityCurve[i - 1]
+    const current = equityCurve[i]
+    if (!Number.isFinite(previous) || previous <= 0 || !Number.isFinite(current)) {
+      continue
+    }
+    returns.push((current - previous) / previous)
+  }
+
+  return returns
+}

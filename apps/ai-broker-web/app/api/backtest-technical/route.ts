@@ -5,7 +5,7 @@ import {
   TECHNICAL_STRATEGY_ID_BY_NAME,
   TECHNICAL_STRATEGY_NAME_BY_ID,
 } from '@/lib/technical-strategies'
-import { maxDrawdownPercent } from '@/lib/backtest-metrics'
+import { equityCurveReturns, maxDrawdownPercent } from '@/lib/backtest-metrics'
 
 interface BacktestRequest {
   symbol: string
@@ -53,7 +53,6 @@ function calculateMetrics(actions: number[], closingPrices: number[], dates: Dat
   // Portfolio value sampled each bar, seeded with the starting capital so the
   // drawdown peak begins at initialCapital (matching the prior convention).
   const equityCurve: number[] = [initialCapital]
-  const returns: number[] = []
   const signals: TradeSignal[] = []
   let lastBuyPrice = 0
 
@@ -99,11 +98,6 @@ function calculateMetrics(actions: number[], closingPrices: number[], dates: Dat
 
     const currentValue = cash + shares * price
     equityCurve.push(currentValue)
-
-    if (i > 0) {
-      const dailyReturn = (currentValue - (cash + shares * closingPrices[i - 1])) / (cash + shares * closingPrices[i - 1])
-      returns.push(dailyReturn)
-    }
   }
 
   // Close any open positions
@@ -131,6 +125,11 @@ function calculateMetrics(actions: number[], closingPrices: number[], dates: Dat
   const totalReturnPercent = (totalReturn / initialCapital) * 100
   const winRate = trades > 0 ? (winningTrades / trades) * 100 : 0
   const maxDrawdown = maxDrawdownPercent(equityCurve)
+
+  // Per-bar returns from the sampled equity curve, dropping the synthetic
+  // initial-capital seed (kept only so the drawdown peak starts at
+  // initialCapital) so the return periods are the bar-to-bar transitions.
+  const returns = equityCurveReturns(equityCurve.slice(1))
 
   // Calculate Sharpe Ratio (simplified)
   let sharpeRatio: number | undefined
