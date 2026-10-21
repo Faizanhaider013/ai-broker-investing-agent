@@ -1,4 +1,6 @@
 import {
+  index,
+  primaryKey,
   sqliteTable,
   text,
   integer,
@@ -653,3 +655,83 @@ export const likes = sqliteTable("likes", {
  * Re-export database schema from packages/investing
  */
 export * from "../../../../packages/investing/src/db/schema";
+
+// ============================================================================
+// Admin listing controls
+// ============================================================================
+
+/**
+ * Admin publishing decisions for what the public site lists. One row per
+ * (kind, item): a Polymarket market (`pm-market`, keyed by market id) or a
+ * stock (`stock`, keyed by its upper-case symbol). Kept apart from the synced
+ * tables so a market re-sync — which upserts, and on a full sync deletes and
+ * re-inserts `polymarket_markets` — never resets what an admin unpublished.
+ *
+ * - `pm-market` + published=false: hidden from the public market lists.
+ * - `stock` + published=true: in the public featured-stocks list.
+ * - `stock` + published=false: hidden from trending/gainers/screener lists.
+ */
+export const listingControls = sqliteTable("listing_controls", {
+  id: text("id").primaryKey(), // `${kind}:${itemId}`
+  kind: text("kind").notNull(), // "pm-market" | "stock"
+  itemId: text("item_id").notNull(),
+  published: integer("published", { mode: "boolean" }).notNull().default(true),
+  label: text("label"), // Display name captured when the row was written
+  note: text("note"),
+  updatedBy: text("updated_by"), // Admin email
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  index("listing_controls_kind_published_idx").on(table.kind, table.published),
+]);
+
+// ============================================================================
+// QwkSearch research agent
+// ============================================================================
+
+/**
+ * The QwkSearch account a user linked through "Sign in with QwkSearch" (or by
+ * pasting a QwkSearch API key), plus their research-agent preferences. One row
+ * per user; see lib/qwksearch/.
+ *
+ * - `connection`: JSON `QwkSearchConnection` (API key, profile, plan) — null
+ *   while no QwkSearch account is linked. The key is the user's own and is
+ *   only ever returned to them, by `/api/qwksearch/session`.
+ * - `preferences`: JSON map of the research agent's client-side settings
+ *   (`research-agent-ui/settings`), so they follow the user across devices.
+ */
+export const qwksearchConnections = sqliteTable("qwksearch_connections", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  connection: text("connection"),
+  preferences: text("preferences"),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+/**
+ * The Research Agent's documents and folders (the REASON editor's files
+ * sidebar on /research), kept on the user's account so they follow them
+ * across devices. Keyed by the editor's own document id (a string it makes
+ * from `Date.now()`), unique per user, so a document the editor created
+ * offline can be written with a plain PUT. `isFolder`/`isExpanded` are 0/1
+ * and `metadata` is JSON text, the shape react-reason-editor's sync reads.
+ * See lib/qwksearch/documents.ts.
+ */
+export const researchDocuments = sqliteTable("research_documents", {
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  id: text("id").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull().default(""),
+  parentId: text("parent_id"),
+  isFolder: integer("is_folder").notNull().default(0),
+  isExpanded: integer("is_expanded").notNull().default(0),
+  metadata: text("metadata"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.id] }),
+  index("research_documents_user_updated_idx").on(table.userId, table.updatedAt),
+]);

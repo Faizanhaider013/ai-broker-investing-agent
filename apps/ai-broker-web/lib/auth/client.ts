@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/react";
-import { siweClient } from "better-auth/client/plugins";
+import { oneTimeTokenClient, siweClient } from "better-auth/client/plugins";
 
 // Only pass an explicit baseURL when one is configured. Falling back to a
 // hardcoded "http://localhost:3000" breaks auth requests whenever the app is
@@ -8,7 +8,7 @@ import { siweClient } from "better-auth/client/plugins";
 // current page origin when baseURL is omitted, which is what we want here.
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_APP_URL,
-  plugins: [siweClient()],
+  plugins: [siweClient(), oneTimeTokenClient()],
 });
 
 // Named exports for compatibility

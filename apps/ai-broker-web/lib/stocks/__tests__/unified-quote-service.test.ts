@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   saveQuoteToCache: vi.fn(),
   alpacaGetQuote: vi.fn(),
   yahooGetQuote: vi.fn(),
+  yahooGetChartQuote: vi.fn(),
 }))
 
 vi.mock('@/packages/investing/src/stocks/quote-cache-service', () => ({
@@ -28,7 +29,11 @@ vi.mock('@/packages/investing/src/alpaca/alpaca-mcp-client', () => ({
   getAlpacaMCPClient: () => ({ getQuote: mocks.alpacaGetQuote }),
 }))
 vi.mock('@/packages/investing/src/stocks/yahoo-finance-wrapper', () => ({
-  yahooFinanceWrapper: { getQuote: mocks.yahooGetQuote, getHistorical: vi.fn() },
+  yahooFinanceWrapper: {
+    getQuote: mocks.yahooGetQuote,
+    getChartQuote: mocks.yahooGetChartQuote,
+    getHistorical: vi.fn(),
+  },
 }))
 vi.mock('@/packages/investing/src/stocks/finnhub-wrapper', () => ({
   finnhub: { getQuote: vi.fn(), getHistoricalData: vi.fn() },
@@ -43,6 +48,7 @@ beforeEach(() => {
   mocks.saveQuoteToCache.mockResolvedValue(undefined)
   mocks.alpacaGetQuote.mockResolvedValue(null)
   mocks.yahooGetQuote.mockResolvedValue({ success: false })
+  mocks.yahooGetChartQuote.mockResolvedValue({ success: false })
 })
 
 describe('getQuote — symbol handling', () => {
@@ -210,6 +216,51 @@ describe('getQuote — provider fallback', () => {
 
     expect(result.success).toBe(false)
     expect(result.error).toMatch(/AAPL/)
+    expect(mocks.saveQuoteToCache).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the Yahoo chart endpoint when the quote endpoint fails', async () => {
+    // "All sources failed for TGT" in production: Yahoo's quote endpoint
+    // failed while its chart endpoint, which needs no crumb, still answered.
+    mocks.yahooGetQuote.mockResolvedValue({ success: false, error: 'Invalid Crumb' })
+    mocks.yahooGetChartQuote.mockResolvedValue({
+      success: true,
+      data: {
+        regularMarketPrice: 154.26,
+        regularMarketChange: -2.37,
+        regularMarketPreviousClose: 156.63,
+        longName: 'Target Corporation',
+      },
+    })
+
+    const result = await getQuote('TGT')
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { symbol: 'TGT', price: 154.26, change: -2.37, previousClose: 156.63, source: 'yfinance' },
+    })
+    expect(mocks.saveQuoteToCache).toHaveBeenCalled()
+  })
+
+  it('falls back to the chart endpoint when the quote endpoint throws', async () => {
+    mocks.yahooGetQuote.mockRejectedValue(new Error('fetch failed'))
+    mocks.yahooGetChartQuote.mockResolvedValue({ success: true, data: { regularMarketPrice: 50 } })
+
+    await expect(getQuote('TGT')).resolves.toMatchObject({ success: true, data: { price: 50 } })
+  })
+
+  it('does not call the chart endpoint when the quote endpoint succeeds', async () => {
+    mocks.yahooGetQuote.mockResolvedValue({ success: true, data: { regularMarketPrice: 190 } })
+
+    await getQuote('AAPL')
+
+    expect(mocks.yahooGetChartQuote).not.toHaveBeenCalled()
+  })
+
+  it('does not accept a chart payload priced at zero', async () => {
+    mocks.yahooGetChartQuote.mockResolvedValue({ success: true, data: { regularMarketPrice: 0 } })
+
+    await expect(getQuote('TGT')).resolves.toMatchObject({ success: false })
     expect(mocks.saveQuoteToCache).not.toHaveBeenCalled()
   })
 })

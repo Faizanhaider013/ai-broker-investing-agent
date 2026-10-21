@@ -1,4 +1,5 @@
 import {
+  index,
   sqliteTable,
   text,
   integer,
@@ -843,3 +844,32 @@ export const dukascopyIndexCache = sqliteTable("dukascopy_index_cache", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
+
+// ============================================================================
+// Admin listing controls
+// ============================================================================
+
+/**
+ * Admin publishing decisions for what the public site lists. One row per
+ * (kind, item): a Polymarket market (`pm-market`, keyed by market id) or a
+ * stock (`stock`, keyed by its upper-case symbol). Kept apart from the synced
+ * tables so a market re-sync — which upserts, and on a full sync deletes and
+ * re-inserts `polymarket_markets` — never resets what an admin unpublished.
+ *
+ * - `pm-market` + published=false: hidden from the public market lists.
+ * - `stock` + published=true: in the public featured-stocks list.
+ * - `stock` + published=false: hidden from trending/gainers/screener lists.
+ */
+export const listingControls = sqliteTable("listing_controls", {
+  id: text("id").primaryKey(), // `${kind}:${itemId}`
+  kind: text("kind").notNull(), // "pm-market" | "stock"
+  itemId: text("item_id").notNull(),
+  published: integer("published", { mode: "boolean" }).notNull().default(true),
+  label: text("label"), // Display name captured when the row was written
+  note: text("note"),
+  updatedBy: text("updated_by"), // Admin email
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  index("listing_controls_kind_published_idx").on(table.kind, table.published),
+]);

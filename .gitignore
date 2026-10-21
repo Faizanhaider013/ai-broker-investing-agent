@@ -20,6 +20,8 @@ docs/.next
 # vinext build output and generated caches
 /dist/
 **/dist/
+# ...except the native wrapper's bundled frontend (launch splash + settings page), which is source
+!apps/ai-broker-native-wrapper/dist/
 **/.vinext/
 **/.next/
 **/out/

@@ -1,12 +1,11 @@
-import { db } from "../../db";
-import { polymarketMarkets } from "../../db/schema";
+import { firstClobTokenId } from "../utils/token-ids";
 import { fetchMarkets, fetchAllMarkets } from "../api/markets";
 import { saveMarkets } from "../db/markets";
 import { syncPriceHistory } from "./prices";
 
 /**
  * Syncs markets from Polymarket API to the database.
- * Clears existing markets and fetches fresh data sorted by 24h volume.
+ * Upserts fresh data sorted by 24h volume (existing rows are kept).
  * Also fetches and stores price history for markets with token IDs.
  * @param limit - Maximum number of markets to sync (default: 200)
  * @param syncPriceHistoryFlag - Whether to also fetch price history (default: true)
@@ -16,13 +15,10 @@ export async function syncMarkets(limit = 200, syncPriceHistoryFlag = true) {
   try {
     console.log("Starting Polymarket markets sync...");
 
-    try {
-      await db.delete(polymarketMarkets);
-    } catch (error: any) {
-      console.error("Failed to clear existing markets:", error.message);
-      // Continue anyway
-    }
-
+    // Upsert only. This used to delete the whole table first, so a failed or
+    // rate-limited fetch left the site with no markets at all — and anyone
+    // could trigger it through `GET /api/polymarket/markets?sync=true`.
+    // Ended markets are retired by `deactivateExpiredMarkets` instead.
     const markets: any = await fetchMarkets(limit, "volume24hr");
     await saveMarkets(markets);
     console.log(`Saved ${markets.length} markets`);
@@ -33,10 +29,10 @@ export async function syncMarkets(limit = 200, syncPriceHistoryFlag = true) {
     if (syncPriceHistoryFlag) {
       console.log("Fetching price history for markets...");
       for (const market of markets) {
-        if (market.clobTokenIds && market.clobTokenIds.length > 0) {
+        if (firstClobTokenId(market.clobTokenIds)) {
           try {
             // Fetch history for the first token (typically "Yes" outcome)
-            const tokenId = market.clobTokenIds[0];
+            const tokenId = firstClobTokenId(market.clobTokenIds) as string;
 
             // Validate token ID before fetching
             // Valid token IDs should be alphanumeric strings of reasonable length
@@ -84,7 +80,7 @@ export async function syncMarkets(limit = 200, syncPriceHistoryFlag = true) {
 
 /**
  * Syncs all active markets from Polymarket API to the database.
- * Clears existing markets and fetches all available data sorted by 24h volume.
+ * Upserts all available markets sorted by 24h volume (existing rows are kept).
  * Also fetches and stores price history for markets with token IDs.
  * @param maxMarkets - Maximum total number of markets to sync (default: 0 for unlimited, fetches ALL active markets)
  * @param syncPriceHistoryFlag - Whether to also fetch price history (default: true)
@@ -97,13 +93,7 @@ export async function syncAllMarkets(
   try {
     console.log("Starting Polymarket all markets sync...");
 
-    try {
-      await db.delete(polymarketMarkets);
-    } catch (error: any) {
-      console.error("Failed to clear existing markets:", error.message);
-      // Continue anyway
-    }
-
+    // Upsert only — see syncMarkets for why the table is no longer cleared.
     const markets: any = await fetchAllMarkets("volume24hr", maxMarkets);
     await saveMarkets(markets);
     console.log(`Saved ${markets.length} markets`);
@@ -114,10 +104,10 @@ export async function syncAllMarkets(
     if (syncPriceHistoryFlag) {
       console.log("Fetching price history for markets...");
       for (const market of markets) {
-        if (market.clobTokenIds && market.clobTokenIds.length > 0) {
+        if (firstClobTokenId(market.clobTokenIds)) {
           try {
             // Fetch history for the first token (typically "Yes" outcome)
-            const tokenId = market.clobTokenIds[0];
+            const tokenId = firstClobTokenId(market.clobTokenIds) as string;
 
             // Validate token ID before fetching
             // Valid token IDs should be alphanumeric strings of reasonable length

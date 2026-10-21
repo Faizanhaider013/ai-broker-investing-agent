@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 
 /**
  * Fetches active prediction markets from the Polymarket Gamma API.

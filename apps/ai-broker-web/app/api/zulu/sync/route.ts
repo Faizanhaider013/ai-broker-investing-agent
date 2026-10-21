@@ -1,7 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { syncZuluTraders } from '@/packages/investing/src/leaders/zulu'
+import { assertAdmin } from '@/lib/auth/admin'
+import { isCronRequest } from '@/lib/auth/cron'
 
-export async function POST() {
+/** Pulls ZuluTrade's top traders into D1. Admins or the cron secret only: it writes. */
+export async function POST(request: NextRequest) {
+  if (!isCronRequest(request.headers.get('authorization'))) {
+    const guard = await assertAdmin()
+    if (guard) return guard
+  }
+
   try {
     const result = await syncZuluTraders()
     
@@ -17,7 +25,7 @@ export async function POST() {
         success: false, 
         error: error.message || 'Failed to sync traders' 
       },
-      { status: 500 }
+      { status: 502 }
     )
   }
 }

@@ -15,6 +15,9 @@ it.
   <Card title="fin-data-api" href="https://github.com/OpenSourceAGI/ai-broker-investing-agent/tree/main/packages/fin-data-api">
     A TypeScript financial data API across many providers.
   </Card>
+  <Card title="crypto-wallet" href="https://github.com/OpenSourceAGI/ai-broker-investing-agent/tree/main/packages/crypto-wallet">
+    The crypto wallet: wallet UI, Ethereum LangChain tools, and the Ethereum MCP client.
+  </Card>
   <Card title="ai-broker-api-client" href="https://github.com/OpenSourceAGI/ai-broker-investing-agent/tree/main/packages/ai-broker-api-client">
     The generated, typed client for the public API.
   </Card>
@@ -67,6 +70,23 @@ ESM.
 A TypeScript financial data API with OpenAPI/Scalar documentation, converted
 from the OpenBB Finance APIs. Wraps a broad set of providers — Alpha Vantage,
 FMP, FRED, Intrinio, Polygon, SEC, Tiingo, and more — behind one typed surface.
+
+## `crypto-wallet`
+
+The crypto wallet ported from
+[crypto-wallet-ai](https://github.com/vtempest/crypto-wallet-ai). Like
+`investing`, the app compiles it from TypeScript source.
+
+| Import | Provides |
+| --- | --- |
+| `crypto-wallet/components` | `<WalletInfo />`, the linked-wallets card on the **Crypto Wallet** sidebar page. |
+| `crypto-wallet/privy` | The Privy in-app wallet: `<PrivyWalletProvider>` and `<EmbeddedWallet />` (login, address, balance, send, export). |
+| `crypto-wallet/wallet` | Dependency-free helpers: `summarizeWallets`, chain names, explorer links. |
+| `crypto-wallet` | Wallet-aware LangChain tools (`getWalletAwareTools`), Ethereum query tools, and the Ethereum MCP client. |
+
+The package's `docs/` folder carries the original integration guides (SIWE
+flow, Ethereum MCP tools, LangChain MCP setup) and `server/` the reference
+JSON-RPC and MCP servers.
 
 ## `ai-broker-api-client`
 

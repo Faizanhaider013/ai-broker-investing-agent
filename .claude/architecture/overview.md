@@ -66,6 +66,7 @@ Route groups under `app/`: `dashboard`, `markets`, `stock`, `portfolio`,
 | Package | Published | What it owns |
 | --- | --- | --- |
 | `investing` | npm | Trading agents, debate research, algo strategies, Alpaca, leaderboards, live data, correlation, prediction-market sync, prediction-market agents and cross-platform arbitrage. The heart of the repo. |
+| `crypto-wallet` | — | The crypto wallet ported from crypto-wallet-ai: `<WalletInfo />`, wallet-aware Ethereum LangChain tools, Ethereum MCP client, docs. Consumed from source; backs `/wallet` and `/api/wallet/info`. |
 | `fin-data-api` | — | TypeScript port of OpenBB finance APIs: Congress, earnings calendars, CFTC. Zod-validated, Scalar OpenAPI docs. The one Jest workspace. |
 | `ai-broker-api-client` | private | Typed client **generated** from the OpenAPI spec with `@hey-api/openapi-ts`. Do not hand-edit `*.gen.ts`. |
 | `mcp-server` | — | MCP server **generated** from the same OpenAPI spec (33 tools) via `mcp-use`. |
