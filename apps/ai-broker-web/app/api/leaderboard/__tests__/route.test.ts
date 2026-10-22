@@ -130,3 +130,27 @@ describe('GET /api/leaderboard — other', () => {
     expect(await res.json()).toEqual({ success: false, error: 'upstream down' })
   })
 })
+
+describe('GET /api/leaderboard — parameter hardening', () => {
+  it('falls back to 50 for an unparseable limit instead of passing NaN', async () => {
+    getZuluTraders.mockResolvedValue([])
+    await GET(req('?limit=lots'))
+    expect(getZuluTraders).toHaveBeenCalledWith(50)
+  })
+
+  it('clamps the limit to 1…200', async () => {
+    getZuluTraders.mockResolvedValue([])
+    await GET(req('?limit=0'))
+    expect(getZuluTraders).toHaveBeenLastCalledWith(1)
+    await GET(req('?limit=100000'))
+    expect(getZuluTraders).toHaveBeenLastCalledWith(200)
+  })
+
+  it('ignores an unknown orderBy instead of passing it to the query', async () => {
+    getLeaders.mockResolvedValue([])
+    await GET(req('?source=polymarket&orderBy=drop%20table'))
+    expect(getLeaders).toHaveBeenCalledWith('vol', 50)
+    await GET(req('?source=polymarket&orderBy=overallGain'))
+    expect(getLeaders).toHaveBeenLastCalledWith('overallGain', 50)
+  })
+})

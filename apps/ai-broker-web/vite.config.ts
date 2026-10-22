@@ -18,6 +18,7 @@ const require = createRequire(import.meta.url);
 const entitiesEscape = require.resolve("entities/escape");
 
 const investingSrc = path.resolve(monorepoRoot, "packages/investing/src");
+const cryptoWalletSrc = path.resolve(monorepoRoot, "packages/crypto-wallet/src");
 const fumadocsPlugin = await mdx(mdxConfig);
 
 /**
@@ -109,9 +110,9 @@ export default defineConfig({
         images: {
           unoptimized: true,
         },
-        // `investing` is a workspace package consumed straight from
-        // TypeScript source, so it has to be compiled with the app.
-        transpilePackages: ["indicatorts", "investing"],
+        // `investing` and `crypto-wallet` are workspace packages consumed
+        // straight from TypeScript source, so they are compiled with the app.
+        transpilePackages: ["indicatorts", "investing", "crypto-wallet"],
         reactStrictMode: true,
       },
     }),
@@ -122,6 +123,12 @@ export default defineConfig({
   resolve: {
     alias: {
       investing: path.join(investingSrc, "index.ts"),
+      // Subpaths before the bare name: the first matching alias wins.
+      "crypto-wallet/components": path.join(cryptoWalletSrc, "components/index.ts"),
+      "crypto-wallet/privy": path.join(cryptoWalletSrc, "privy/index.ts"),
+      "crypto-wallet/send": path.join(cryptoWalletSrc, "send.ts"),
+      "crypto-wallet/wallet": path.join(cryptoWalletSrc, "wallet.ts"),
+      "crypto-wallet": path.join(cryptoWalletSrc, "index.ts"),
       "entities/escape": entitiesEscape,
       // Emitted by the fumadocs-mdx Vite plugin into `.source/`.
       "fumadocs-mdx:collections/server": path.join(projectRoot, ".source/server.ts"),

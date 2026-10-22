@@ -10,7 +10,6 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "ignoreDeprecations": "6.0",
     "types": [
       "vite/client",
       "vinext/types"
@@ -31,6 +30,21 @@
       ],
       "investing/*": [
         "../../packages/investing/src/*"
+      ],
+      "crypto-wallet/components": [
+        "../../packages/crypto-wallet/src/components/index.ts"
+      ],
+      "crypto-wallet/privy": [
+        "../../packages/crypto-wallet/src/privy/index.ts"
+      ],
+      "crypto-wallet/send": [
+        "../../packages/crypto-wallet/src/send.ts"
+      ],
+      "crypto-wallet/wallet": [
+        "../../packages/crypto-wallet/src/wallet.ts"
+      ],
+      "crypto-wallet": [
+        "../../packages/crypto-wallet/src/index.ts"
       ],
       "fumadocs-mdx:collections/server": [
         "./.source/server.ts"

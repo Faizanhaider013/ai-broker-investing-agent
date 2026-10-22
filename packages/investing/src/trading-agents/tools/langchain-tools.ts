@@ -5,6 +5,7 @@
 
 import { StockData, FundamentalsData, NewsItem } from '../types'
 import { getStockData, getFundamentals, getNews, getIndicators } from './data-tools'
+import type { LLMToolCall } from '../utils/llm-client'
 
 /**
  * Tool interface compatible with LangChain tool format
@@ -272,6 +273,58 @@ export async function executeTool(toolName: string, input: any): Promise<string>
 }
 
 /**
+ * Resolve a stable `tool_call_id` for every call in a single assistant turn.
+ *
+ * Provider-supplied ids are used verbatim (so a later tool-result message can be
+ * correlated back to its call). A call that arrives without an id — some
+ * OpenAI-compatible providers omit it, and legacy callers construct calls by
+ * hand — gets a deterministic `call_<index>` fallback. The fallback is made
+ * collision-free against both the ids this response did supply and any fallback
+ * already handed out in the same turn, so no two tool results can ever point at
+ * the same assistant tool call.
+ */
+export function resolveToolCallIds(toolCalls: readonly LLMToolCall[]): string[] {
+  const supplied = new Set<string>()
+  for (const call of toolCalls) {
+    if (typeof call.id === 'string' && call.id.length > 0) supplied.add(call.id)
+  }
+
+  const used = new Set<string>()
+  return toolCalls.map((call, index) => {
+    if (typeof call.id === 'string' && call.id.length > 0) {
+      used.add(call.id)
+      return call.id
+    }
+    let candidate = `call_${index}`
+    for (let suffix = 1; supplied.has(candidate) || used.has(candidate); suffix++) {
+      candidate = `call_${index}_${suffix}`
+    }
+    used.add(candidate)
+    return candidate
+  })
+}
+
+/**
+ * Serialize a parsed tool call into the OpenAI-compatible `tool_calls` entry the
+ * provider expects back on the next turn. The original raw argument string is
+ * preserved verbatim when available so the round-trip is byte-for-byte; only a
+ * hand-built call without it falls back to re-stringifying the parsed object.
+ */
+function toWireToolCall(call: LLMToolCall, id: string) {
+  return {
+    id,
+    type: 'function' as const,
+    function: {
+      name: call.name,
+      arguments:
+        typeof call.rawArguments === 'string'
+          ? call.rawArguments
+          : JSON.stringify(call.arguments ?? {})
+    }
+  }
+}
+
+/**
  * Agent executor that handles LLM + tools interaction
  */
 export class AgentExecutor {
@@ -290,7 +343,6 @@ export class AgentExecutor {
    */
   async run(prompt: string): Promise<string> {
     let iteration = 0
-    let currentPrompt = prompt
     const conversationHistory: any[] = [
       { role: 'user', content: prompt }
     ]
@@ -309,20 +361,28 @@ export class AgentExecutor {
         return response.content
       }
 
-      // Execute tool calls
-      for (const toolCall of response.toolCalls) {
+      const toolCalls = response.toolCalls
+      const ids = resolveToolCallIds(toolCalls)
+
+      // One assistant message carries every tool call for this turn, in the
+      // OpenAI-compatible shape the provider requires when the transcript is
+      // replayed on the next iteration.
+      conversationHistory.push({
+        role: 'assistant',
+        content: response.content || '',
+        tool_calls: toolCalls.map((toolCall, index) => toWireToolCall(toolCall, ids[index]))
+      })
+
+      // Execute the calls sequentially and append one tool-result message per
+      // call, keyed by that call's exact id so the result correlates back to it.
+      for (let index = 0; index < toolCalls.length; index++) {
+        const toolCall = toolCalls[index]
         const toolResult = await executeTool(toolCall.name, toolCall.arguments)
 
         conversationHistory.push({
-          role: 'assistant',
-          content: response.content || '',
-          tool_calls: [toolCall]
-        })
-
-        conversationHistory.push({
           role: 'tool',
-          content: toolResult,
-          tool_call_id: toolCall.name
+          tool_call_id: ids[index],
+          content: toolResult
         })
       }
     }

@@ -1,5 +1,5 @@
 import {
-  fetchLeaderboard,
+  fetchLeaderboardPages,
   fetchTopTraders,
   fetchTraderPositions,
 } from "../api/leaderboard";
@@ -41,7 +41,8 @@ export async function syncLeaderboard(
 ) {
   console.log("Starting Polymarket leaderboard sync...");
 
-  const leaderboard: any = await fetchLeaderboard(options);
+  // The API serves at most 50 rows a request, so a larger limit is paged.
+  const leaderboard = await fetchLeaderboardPages(options);
   await saveLeaderboardData(leaderboard);
   console.log(`Saved ${leaderboard.length} leaderboard entries`);
 

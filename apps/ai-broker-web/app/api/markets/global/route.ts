@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 // Cache TTL in milliseconds (5 minutes)
 const CACHE_TTL = 5 * 60 * 1000;
 
-// Map of Dukascopy symbols to display info
+// Map of Dukascopy symbols to display info. Every symbol must be a
+// dukascopy-node `Instrument` key, or the fetch throws (it has no India index).
 const GLOBAL_INDICES = [
   { symbol: "usa30idxusd", name: "Dow Jones", country: "USA", countryCode: "US" },
   { symbol: "usa500idxusd", name: "S&P 500", country: "USA", countryCode: "US" },
@@ -25,7 +26,6 @@ const GLOBAL_INDICES = [
   { symbol: "hkgidxhkd", name: "Hang Seng", country: "Hong Kong", countryCode: "HK" },
   { symbol: "chiidxusd", name: "China A50", country: "China", countryCode: "CN" },
   { symbol: "ausidxaud", name: "ASX 200", country: "Australia", countryCode: "AU" },
-  { symbol: "indidxusd", name: "Nifty 50", country: "India", countryCode: "IN" },
   { symbol: "cheidxchf", name: "SMI", country: "Switzerland", countryCode: "CH" },
   { symbol: "espidxeur", name: "IBEX 35", country: "Spain", countryCode: "ES" },
   { symbol: "itaidxeur", name: "FTSE MIB", country: "Italy", countryCode: "IT" },

@@ -7,7 +7,11 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { consumeSurveyPrompt } from "@/lib/survey/prompt"
 
-export function GoogleSignIn() {
+/**
+ * `redirectTo` is a same-site path to go to once signed in instead of the
+ * default destination (used by the native app's sign-in handoff).
+ */
+export function GoogleSignIn({ redirectTo }: { redirectTo?: string | null } = {}) {
   const { data: session } = useSession()
   const router = useRouter()
   const [isLocalhost, setIsLocalhost] = useState(false)
@@ -16,6 +20,10 @@ export function GoogleSignIn() {
   useEffect(() => {
     const checkUserAndRedirect = async () => {
       if (session?.user) {
+        if (redirectTo) {
+          window.location.replace(redirectTo)
+          return
+        }
         router.push((await consumeSurveyPrompt()) ? "/survey" : "/")
       }
     }
@@ -25,20 +33,23 @@ export function GoogleSignIn() {
     if (typeof window !== "undefined") {
       setIsLocalhost(window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
     }
-  }, [session, router])
+  }, [session, router, redirectTo])
+
+  // Back to this page after the provider round-trip, keeping redirectTo.
+  const loginCallbackURL = redirectTo ? `/login?redirectTo=${encodeURIComponent(redirectTo)}` : "/login"
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     await signIn.social({
       provider: "google",
-      callbackURL: "/login",
+      callbackURL: loginCallbackURL,
     })
   }
 
   const handleDevLogin = async () => {
     setIsLoading(true)
     await signIn.anonymous({
-      callbackURL: "/login",
+      callbackURL: loginCallbackURL,
     })
   }
 

@@ -35,6 +35,11 @@ export default defineConfig({
       // tests run against the same code the app imports without a build step.
       { find: /^investing\/(.*)$/, replacement: `${resolve(rootDir, '../../packages/investing/src')}/$1/index.ts` },
       { find: /^investing$/, replacement: `${resolve(rootDir, '../../packages/investing/src')}/index.ts` },
+      { find: /^crypto-wallet\/components$/, replacement: `${resolve(rootDir, '../../packages/crypto-wallet/src')}/components/index.ts` },
+      { find: /^crypto-wallet\/privy$/, replacement: `${resolve(rootDir, '../../packages/crypto-wallet/src')}/privy/index.ts` },
+      { find: /^crypto-wallet\/send$/, replacement: `${resolve(rootDir, '../../packages/crypto-wallet/src')}/send.ts` },
+      { find: /^crypto-wallet\/wallet$/, replacement: `${resolve(rootDir, '../../packages/crypto-wallet/src')}/wallet.ts` },
+      { find: /^crypto-wallet$/, replacement: `${resolve(rootDir, '../../packages/crypto-wallet/src')}/index.ts` },
     ],
   },
 })

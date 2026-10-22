@@ -1,0 +1,45 @@
+{
+  "appName": "AI Broker",
+  "productName": "AI Broker",
+  "identifier": "broker.autoinvestment.app",
+  "version": "1.0.0",
+  "url": "https://autoinvestment.broker",
+  "sources": [
+    {
+      "id": "live",
+      "label": "autoinvestment.broker",
+      "url": "https://autoinvestment.broker"
+    }
+  ],
+  "defaultSource": "live",
+  "deepLinkScheme": "aibroker",
+  "iconSource": "../../ai-broker-web/public/android-chrome-512x512.png",
+  "copyright": "AI Broker",
+  "category": "Finance",
+  "shortDescription": "AI analyst agents, algorithmic entry/exit signals, copy-trading leaderboards and prediction markets, in one native app.",
+  "mediaUsage": {
+    "camera": "AI Broker uses the camera only when a page you open asks for it, such as identity verification.",
+    "microphone": "AI Broker uses the microphone only when a page you open asks for it, such as voice chat with an analyst agent."
+  },
+  "trustedOrigins": [
+    "https://autoinvestment.broker",
+    "https://*.autoinvestment.broker"
+  ],
+  "window": {
+    "title": "AI Broker",
+    "width": 1360,
+    "height": 860,
+    "minWidth": 480,
+    "minHeight": 480,
+    "fullscreen": false,
+    "resizable": true
+  },
+  "android": {
+    "packageName": "broker.autoinvestment.app",
+    "minSdkVersion": 24
+  },
+  "ios": {
+    "bundleId": "broker.autoinvestment.app",
+    "minimumSystemVersion": "14.0"
+  }
+}

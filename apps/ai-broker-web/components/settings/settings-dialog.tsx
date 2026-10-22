@@ -27,6 +27,7 @@ import {
   AlertCircle,
   SlidersHorizontal,
   ClipboardList,
+  Search,
 } from "lucide-react"
 
 import {
@@ -72,6 +73,18 @@ import { ThirdPartySyncTab } from "@/components/investing/tabs/third-party-sync-
 import { useTickerConfig, defaultTickerConfig, type TickerConfig } from "@/lib/ui-config"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
+
+// The QwkSearch section pulls in research-agent-ui's settings schema, so it
+// loads when it is first shown rather than with every page's sidebar.
+const QwkSearchSettingsPanel = React.lazy(() => import("@/components/qwksearch/QwkSearchSettingsPanel"))
+
+function QwkSearchSettings() {
+  return (
+    <React.Suspense fallback={<div className="py-6 text-center text-sm text-muted-foreground">Loading QwkSearch settings...</div>}>
+      <QwkSearchSettingsPanel />
+    </React.Suspense>
+  )
+}
 
 const LLM_PROVIDERS = [
   {
@@ -248,6 +261,7 @@ const navItems = [
   { name: "General", icon: Key, value: "general" },
   { name: "Config UI", icon: SlidersHorizontal, value: "configui" },
   { name: "LLM", icon: Brain, value: "llm" },
+  { name: "QwkSearch", icon: Search, value: "qwksearch" },
   { name: "Brokers", icon: TrendingUp, value: "brokers" },
   { name: "Data", icon: Database, value: "data" },
   { name: "Teams", icon: Users, value: "teams" },
@@ -258,16 +272,19 @@ export function SettingsDialog({
   trigger,
   open: controlledOpen,
   onOpenChange,
+  initialSection = "general",
 }: {
   trigger?: React.ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /** The section shown when the dialog opens (a `navItems` value). */
+  initialSection?: string
 }) {
   const [internalOpen, setInternalOpen] = React.useState(false)
   const isControlled = controlledOpen !== undefined
   const open = isControlled ? controlledOpen : internalOpen
   const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen
-  const [activeSection, setActiveSection] = React.useState("general")
+  const [activeSection, setActiveSection] = React.useState(initialSection)
   const [settings, setSettings] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -857,6 +874,9 @@ export function SettingsDialog({
           </p>
         </CardContent>
       </Card>
+
+      {/* QwkSearch Research Agent: account link and agent settings, also its own section */}
+      <QwkSearchSettings />
     </div>
   )
 
@@ -1275,6 +1295,8 @@ export function SettingsDialog({
         return renderConfigUISection()
       case "llm":
         return renderLLMSection()
+      case "qwksearch":
+        return <QwkSearchSettings />
       case "brokers":
         return renderBrokersSection()
       case "data":

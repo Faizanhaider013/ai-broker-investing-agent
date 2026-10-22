@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Loading…</title>
+    <style>
+      html, body { height: 100%; margin: 0; background: #000; overflow: hidden; }
+      #splash { position: fixed; top: 50%; left: 50%; width: 160px; height: 160px; margin: -80px 0 0 -80px; border-radius: 32px; animation: pulse 1.4s ease-in-out infinite; }
+      @keyframes pulse { 0%, 100% { opacity: 0.85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
+      #settings {
+        position: fixed; right: 16px; bottom: 16px; z-index: 1;
+        width: 40px; height: 40px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; background: rgba(255, 255, 255, 0.12); font: 22px/1 sans-serif;
+        text-decoration: none; opacity: 0.6;
+      }
+      #settings:hover, #settings:focus-visible { opacity: 1; }
+    </style>
+    <!--
+      Written by scripts/configure.mjs from the active profile: sets
+      window.__WRAPPER_APP_URL__ and the profile's sources this splash
+      chooses between.
+    -->
+    <script src="splash-config.js"></script>
+  </head>
+  <body>
+    <!--
+      Launch splash. The main window's `url` in tauri.conf.json points here,
+      so this page and splash.png (the app icon) ship inside the app bundle
+      and show instantly (and offline) while the site warms up in the
+      background. After a short beat — or on click — the window navigates
+      to the source chosen in settings.html.
+    -->
+    <img id="splash" src="splash.png" alt="" />
+    <!-- Where to load from (live site, beta site, offline build): see settings.html. -->
+    <a id="settings" href="settings.html" title="Choose where the app loads from" aria-label="Settings">&#9881;</a>
+    <script>
+      (function () {
+        var fallbackUrl = window.__WRAPPER_APP_URL__ || "https://autoinvestment.broker";
+        var sources = window.__WRAPPER_SOURCES__ || [];
+        var invoke = window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke;
+        // Coming back from settings.html or the tray's "Load From" menu:
+        // the splash has already been seen, go straight to the source.
+        var skipSplash = window.location.hash === "#skip-splash";
+
+        function isBundled(url) {
+          return url.indexOf("://") === -1;
+        }
+
+        // The chosen source's URL, from the Rust side's saved setting
+        // (src-tauri/src/app_source.rs), or the profile default without it.
+        function chosenUrl() {
+          function pick(id, options) {
+            for (var i = 0; i < options.length; i++) {
+              if (options[i].id === id) return options[i].url;
+            }
+            return fallbackUrl;
+          }
+          if (!invoke) return Promise.resolve(pick(window.__WRAPPER_DEFAULT_SOURCE__, sources));
+          return invoke("get_app_source").then(
+            function (info) { return pick(info.current, info.options); },
+            function () { return fallbackUrl; }
+          );
+        }
+
+        // The offline build is optional (`npm run build:offline`); an app
+        // bundled without it opens the site instead of a missing page.
+        var target = chosenUrl().then(function (url) {
+          if (!isBundled(url)) return url;
+          return fetch(url, { method: "HEAD" }).then(
+            function (res) { return res.ok ? url : fallbackUrl; },
+            function () { return fallbackUrl; }
+          );
+        });
+
+        // Warm the webview's HTTP cache for the site while the splash shows.
+        target.then(function (url) {
+          if (isBundled(url)) return;
+          var prefetch = document.createElement("link");
+          prefetch.rel = "prefetch";
+          prefetch.href = url;
+          document.head.appendChild(prefetch);
+        });
+
+        var done = false;
+        function launch() {
+          if (done) return;
+          done = true;
+          target.then(function (url) { window.location.replace(url); });
+        }
+
+        var splash = document.getElementById("splash");
+        if (skipSplash) {
+          splash.remove();
+          launch();
+          return;
+        }
+        document.addEventListener("click", launch);
+        document.getElementById("settings").addEventListener("click", function (event) {
+          // Opening settings is not "skip the splash, go to the app".
+          event.stopPropagation();
+          done = true;
+        });
+        // Long enough to register as a launch screen, short enough not to wait on.
+        setTimeout(launch, 1200);
+      })();
+    </script>
+  </body>
+</html>

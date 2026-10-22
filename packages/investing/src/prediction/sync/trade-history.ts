@@ -1,5 +1,6 @@
 import {
   fetchLeaderboard,
+  LEADERBOARD_MAX_OFFSET,
   fetchAllTraderActivity,
   type TraderActivity,
 } from "../api/leaderboard";
@@ -77,15 +78,16 @@ export async function fetchAndStoreTopTraders(
   const { timePeriod = "all", orderBy = "VOL" } = options;
   const traders: any[] = [];
 
-  // Fetch in batches of 100 (API max is probably limited)
-  const batchSize = 100;
+  // The data-api leaderboard serves at most 50 rows per request.
+  const batchSize = 50;
   let offset = 0;
 
-  while (traders.length < limit) {
+  while (traders.length < limit && offset <= LEADERBOARD_MAX_OFFSET) {
+    const requested = Math.min(batchSize, limit - traders.length);
     const batch = await fetchLeaderboard({
       timePeriod,
       orderBy,
-      limit: Math.min(batchSize, limit - traders.length),
+      limit: requested,
       offset,
     });
 
@@ -94,7 +96,9 @@ export async function fetchAndStoreTopTraders(
     }
 
     traders.push(...batch);
-    offset += batchSize;
+    // Advance by what actually came back so a short page never skips rows.
+    offset += batch.length;
+    if (batch.length < requested) break;
 
     // Small delay between fetches
     await new Promise((resolve) => setTimeout(resolve, 100));
