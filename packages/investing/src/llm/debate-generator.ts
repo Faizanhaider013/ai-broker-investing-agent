@@ -149,6 +149,46 @@ Guidelines:
     : base;
 }
 
+const REQUIRED_FIELDS = [
+  'yesArguments',
+  'noArguments',
+  'yesSummary',
+  'noSummary',
+  'keyFactors',
+  'uncertainties'
+] as const;
+
+// Allowed gap between yes + no when the model gives both probabilities.
+const PROBABILITY_SUM_TOLERANCE = 0.05;
+
+/**
+ * Checks the parsed model output. Required fields must be present. The model's own
+ * probabilities are optional, but when they are given they must be numbers in 0..1 and
+ * yes + no must add up to about 1, so a bad value is rejected instead of shown as the
+ * model's view.
+ */
+export function validateDebateAnalysis(parsed: any): DebateAnalysis {
+  const missingFields = REQUIRED_FIELDS.filter(field => !parsed?.[field]);
+
+  if (missingFields.length > 0) {
+    console.error('Missing fields in Groq response:', missingFields);
+    throw new Error(`Missing required fields in analysis: ${missingFields.join(', ')}`);
+  }
+
+  const { modelYesProbability: yes, modelNoProbability: no } = parsed;
+  const given = [yes, no].filter(p => p !== undefined && p !== null);
+
+  if (given.some(p => typeof p !== 'number' || !Number.isFinite(p) || p < 0 || p > 1)) {
+    throw new Error('Invalid model probabilities: each must be a number between 0 and 1');
+  }
+
+  if (given.length === 2 && Math.abs(yes + no - 1) > PROBABILITY_SUM_TOLERANCE) {
+    throw new Error(`Invalid model probabilities: yes + no must be about 1, got ${yes + no}`);
+  }
+
+  return parsed as DebateAnalysis;
+}
+
 async function callGroqAsJson(
   prompt: string,
   apiKey?: string,
@@ -207,24 +247,7 @@ async function callGroqAsJson(
       throw new Error(`Invalid JSON response from Groq: ${parseError.message}`);
     }
 
-    // Validate required fields
-    const requiredFields = [
-      'yesArguments',
-      'noArguments',
-      'yesSummary',
-      'noSummary',
-      'keyFactors',
-      'uncertainties'
-    ];
-
-    const missingFields = requiredFields.filter(field => !parsed[field]);
-
-    if (missingFields.length > 0) {
-      console.error('Missing fields in Groq response:', missingFields);
-      throw new Error(`Missing required fields in analysis: ${missingFields.join(', ')}`);
-    }
-
-    return parsed as DebateAnalysis;
+    return validateDebateAnalysis(parsed);
   } catch (error: any) {
     console.error('Error calling Groq API:', error.message);
     throw error;
