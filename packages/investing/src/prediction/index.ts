@@ -26,6 +26,7 @@ export * from "./analysis/categories";
 export * from "./analysis/greeks";
 export * from "./analysis/detector";
 export * from "./analysis/trust-score";
+export * from "./analysis/r-multiple";
 
 // Re-export sync functions
 export * from "./sync/markets";
