@@ -33,6 +33,7 @@ export * from "./analysis/polymarket-wallet-trust";
 export * from "./analysis/binary-forecast-metrics";
 export * from "./analysis/elite-forecaster-selection";
 export * from "./analysis/historical-forecaster-evaluation";
+export * from "./analysis/forecaster-baselines";
 
 // Re-export sync functions
 export * from "./sync/markets";
