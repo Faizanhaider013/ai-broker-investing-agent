@@ -30,6 +30,7 @@ export * from "./analysis/r-multiple";
 export * from "./analysis/position-reconstruction";
 export * from "./analysis/position-settlement";
 export * from "./analysis/polymarket-wallet-trust";
+export * from "./analysis/binary-forecast-metrics";
 
 // Re-export sync functions
 export * from "./sync/markets";
