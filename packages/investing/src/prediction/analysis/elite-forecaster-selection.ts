@@ -179,12 +179,23 @@ function compareText(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/** Numeric semantic equality, including invalid `NaN` sentinels. */
+function sameNumber(a: unknown, b: unknown): boolean {
+  return (
+    a === b ||
+    (typeof a === "number" &&
+      typeof b === "number" &&
+      Number.isNaN(a) &&
+      Number.isNaN(b))
+  );
+}
+
 function sameTradeObservation(a: unknown, b: unknown): boolean {
   if (!isRecord(a) || !isRecord(b)) return a === b;
   return (
     a.id === b.id &&
-    a.rMultiple === b.rMultiple &&
-    a.resolutionTimestamp === b.resolutionTimestamp
+    sameNumber(a.rMultiple, b.rMultiple) &&
+    sameNumber(a.resolutionTimestamp, b.resolutionTimestamp)
   );
 }
 
@@ -194,10 +205,10 @@ function sameForecastObservation(a: unknown, b: unknown): boolean {
     a.id === b.id &&
     a.forecasterId === b.forecasterId &&
     a.eventId === b.eventId &&
-    a.probabilityYes === b.probabilityYes &&
-    a.forecastTimestamp === b.forecastTimestamp &&
-    a.outcome === b.outcome &&
-    a.resolutionTimestamp === b.resolutionTimestamp
+    sameNumber(a.probabilityYes, b.probabilityYes) &&
+    sameNumber(a.forecastTimestamp, b.forecastTimestamp) &&
+    sameNumber(a.outcome, b.outcome) &&
+    sameNumber(a.resolutionTimestamp, b.resolutionTimestamp)
   );
 }
 

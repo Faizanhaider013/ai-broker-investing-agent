@@ -249,6 +249,45 @@ describe("selectEliteForecasters", () => {
       .toHaveLength(2);
   });
 
+  it("does not misclassify repeated invalid NaN evidence as a forecaster conflict", () => {
+    const invalid: EliteForecasterEvidence = {
+      forecasterId: "nan-evidence",
+      tradeObservations: [
+        {
+          id: "nan-trade",
+          rMultiple: Number.NaN,
+          resolutionTimestamp: 100,
+        },
+      ],
+      forecastObservations: [
+        {
+          id: "nan-forecast",
+          forecasterId: "nan-evidence",
+          eventId: "nan-event",
+          probabilityYes: Number.NaN,
+          forecastTimestamp: 50,
+          outcome: 1,
+          resolutionTimestamp: 100,
+        },
+      ],
+    };
+    const result = selectEliteForecasters(
+      [invalid, structuredClone(invalid)],
+      options(),
+    );
+
+    expect(result.inputExclusions).toEqual([
+      { forecasterId: "nan-evidence", reasons: ["duplicate-forecaster"] },
+    ]);
+    expect(result.assessments).toHaveLength(1);
+    expect(result.assessments[0].trade.exclusions).toEqual([
+      { observationId: "nan-trade", reasons: ["invalid-r-multiple"] },
+    ]);
+    expect(result.assessments[0].forecast.metrics?.exclusions).toEqual([
+      expect.objectContaining({ reasons: ["invalid-probability"] }),
+    ]);
+  });
+
   it("treats identical trade evidence in different orders as one forecaster", () => {
     const ordered = trades("trade-order", [1, 0, 0.5]);
     const result = selectEliteForecasters(

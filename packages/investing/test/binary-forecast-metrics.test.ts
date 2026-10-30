@@ -214,6 +214,26 @@ describe("computeBinaryForecastMetrics", () => {
     expect(result.exclusions.filter(x => x.reasons.includes("conflicting-duplicate-id"))).toHaveLength(2);
   });
 
+  it("does not misclassify repeated NaN fields as an ID conflict", () => {
+    const invalid = observation({
+      id: "nan",
+      eventId: "nan",
+      probabilityYes: Number.NaN,
+    });
+    const result = computeBinaryForecastMetrics([invalid, { ...invalid }]);
+
+    expect(result.sampleSize).toBe(0);
+    expect(result.exclusions).toEqual([
+      expect.objectContaining({ reasons: ["invalid-probability"] }),
+      expect.objectContaining({ reasons: ["invalid-probability"] }),
+    ]);
+    expect(
+      result.exclusions.some(row =>
+        row.reasons.includes("conflicting-duplicate-id"),
+      ),
+    ).toBe(false);
+  });
+
   it("rejects an ID conflict before validity and cutoff filtering", () => {
     const valid = observation({ id: "conflict", eventId: "valid" });
     const invalid = observation({

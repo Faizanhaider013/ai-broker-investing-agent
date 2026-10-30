@@ -118,6 +118,17 @@ function diagnosticIdentity(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+/** Numeric semantic equality, including invalid `NaN` sentinels. */
+function sameNumber(a: unknown, b: unknown): boolean {
+  return (
+    a === b ||
+    (typeof a === "number" &&
+      typeof b === "number" &&
+      Number.isNaN(a) &&
+      Number.isNaN(b))
+  );
+}
+
 function exclusion(
   observation: unknown,
   reasons: BinaryForecastExclusionReason[],
@@ -136,10 +147,10 @@ function sameObservation(a: Candidate, b: Candidate): boolean {
     a.id === b.id &&
     a.forecasterId === b.forecasterId &&
     a.eventId === b.eventId &&
-    a.probabilityYes === b.probabilityYes &&
-    a.forecastTimestamp === b.forecastTimestamp &&
-    a.outcome === b.outcome &&
-    a.resolutionTimestamp === b.resolutionTimestamp
+    sameNumber(a.probabilityYes, b.probabilityYes) &&
+    sameNumber(a.forecastTimestamp, b.forecastTimestamp) &&
+    sameNumber(a.outcome, b.outcome) &&
+    sameNumber(a.resolutionTimestamp, b.resolutionTimestamp)
   );
 }
 
@@ -151,10 +162,10 @@ function sameRawObservation(
     a.id === b.id &&
     a.forecasterId === b.forecasterId &&
     a.eventId === b.eventId &&
-    a.probabilityYes === b.probabilityYes &&
-    a.forecastTimestamp === b.forecastTimestamp &&
-    a.outcome === b.outcome &&
-    a.resolutionTimestamp === b.resolutionTimestamp
+    sameNumber(a.probabilityYes, b.probabilityYes) &&
+    sameNumber(a.forecastTimestamp, b.forecastTimestamp) &&
+    sameNumber(a.outcome, b.outcome) &&
+    sameNumber(a.resolutionTimestamp, b.resolutionTimestamp)
   );
 }
 
