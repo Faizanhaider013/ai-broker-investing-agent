@@ -31,6 +31,7 @@ export * from "./analysis/position-reconstruction";
 export * from "./analysis/position-settlement";
 export * from "./analysis/polymarket-wallet-trust";
 export * from "./analysis/binary-forecast-metrics";
+export * from "./analysis/elite-forecaster-selection";
 
 // Re-export sync functions
 export * from "./sync/markets";
